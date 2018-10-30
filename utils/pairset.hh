@@ -24,16 +24,32 @@ namespace utils
 
          Int_t GetNPairs();
 
+         Double_t Metric(TLorentzVector P);
+
+         void SetMetric(std::string metric);
+
       private:
+//         struct proximal {
+//            proximal(Double_t target) { this->target_ = target; }
+//            bool operator() ( const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& lhs,
+//                              const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& rhs ) const
+//            {
+//               
+//               return fabs(lhs.second.M() - target_) < fabs(rhs.second.M() - target_);
+//            }
+//
+//            Double_t target_;
+//         };
          struct proximal {
-            proximal(Double_t target) { this->target_ = target; }
+            proximal(PairSet* ps ) { ps_ = ps; }
             bool operator() ( const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& lhs,
                               const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& rhs ) const
             {
-               return fabs(lhs.second.M() - target_) < fabs(rhs.second.M() - target_);
+               
+               return ps_->Metric(lhs.second) < ps_->Metric(rhs.second);
             }
 
-            Double_t target_;
+            PairSet* ps_;
          };
 
          bool CommonID( std::pair<Int_t, Int_t> ids_1, std::pair<Int_t, Int_t> ids_2 );
@@ -52,6 +68,7 @@ namespace utils
 
          //benchmark: value to compare invariant masses to.
          Double_t benchmark_;
+         std::string metric_;
    };
 
 }

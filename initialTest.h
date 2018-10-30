@@ -40,6 +40,7 @@ public :
    TTree          *fChain = 0;   //!pointer to the analyzed TTree or TChain
 
    TH1F *hist_combined_mass_P, *hist_pair_mass_P;
+   Int_t total_leptons_, isol_rejected_, pt_rejected_, empty_lists_, one_pair_onlys_;
 
    // Readers to access the data (delete the ones you do not need).
    //TTreeReaderValue<Float_t> Event_Weight = {fReader, "Event_Weight"};
@@ -62,37 +63,47 @@ public :
    std::map< std::string, TTreeReaderArray<Float_t>* > isol_map;
    int count = 0;
 
+   std::string optimisingMetric = "";
+   Float_t signalRegionLowerBound, signalRegionUpperBound;
+   Int_t nSignalEvents;
+
+   TH1F * hist_eta_Z = new TH1F("","",25,-5,5);
+
    initialTest(TTree * /*tree*/ =0)
    {
-//      std::cout << "Initialising\n";
-//      for ( std::string lepton : { "Muon", "Electron" } )
-//      {
-//         n_map.insert(
-//               std::pair< const std::string, TTreeReaderValue<Int_t>* >
-//               ( lepton, new TTreeReaderValue<Int_t>
-//                 ({ fReader, (lepton + std::string("_n")).c_str() })
-//               ));
-//         pt_map.insert(
-//               std::pair< const std::string, TTreeReaderArray<Float_t>* >
-//               ( lepton, new TTreeReaderArray<Float_t>
-//                  ({ fReader, (lepton + std::string("_Pt")).c_str() })
-//               ));
-//         eta_map.insert(
-//               std::pair< const std::string, TTreeReaderArray<Float_t>* >
-//               ( lepton, new TTreeReaderArray<Float_t>
-//                  ({ fReader, (lepton + std::string("_Eta")).c_str() })
-//               ));
-//         phi_map.insert(
-//               std::pair< const std::string, TTreeReaderArray<Float_t>* >
-//               ( lepton, new TTreeReaderArray<Float_t>
-//                  ({ fReader, (lepton + std::string("_Phi")).c_str() })
-//               ));
-//         charge_map.insert(
-//               std::pair< const std::string, TTreeReaderArray<Float_t>* >
-//               ( lepton, new TTreeReaderArray<Float_t>
-//                  ({ fReader, (lepton + std::string("_Charge")).c_str() })
-//               ));
-//      }  
+      for ( std::string lepton : { "Muon", "Electron" } )
+      { 
+         n_map.insert(
+               std::pair< const std::string, TTreeReaderValue<Int_t>* >
+               ( lepton, new TTreeReaderValue<Int_t>
+                 ({ fReader, (lepton + std::string("_n")).c_str() })
+               ));
+         pt_map.insert(
+               std::pair< const std::string, TTreeReaderArray<Float_t>* >
+               ( lepton, new TTreeReaderArray<Float_t>
+                 ({ fReader, (lepton + std::string("_Pt")).c_str() })
+               ));
+         eta_map.insert(
+               std::pair< const std::string, TTreeReaderArray<Float_t>* >
+               ( lepton, new TTreeReaderArray<Float_t>
+                 ({ fReader, (lepton + std::string("_Eta")).c_str() })
+               ));
+         phi_map.insert(
+               std::pair< const std::string, TTreeReaderArray<Float_t>* >
+               ( lepton, new TTreeReaderArray<Float_t>
+                 ({ fReader, (lepton + std::string("_Phi")).c_str() })
+               ));
+         charge_map.insert(
+               std::pair< const std::string, TTreeReaderArray<Float_t>* >
+               ( lepton, new TTreeReaderArray<Float_t>
+                 ({ fReader, (lepton + std::string("_Charge")).c_str() })
+               ));
+         isol_map.insert(
+               std::pair< const std::string, TTreeReaderArray<Float_t>* >
+               ( lepton, new TTreeReaderArray<Float_t>
+                 ({ fReader, (lepton + std::string("_Isol")).c_str() })
+               ));
+      }
    }
    virtual ~initialTest() { }
    virtual Int_t   Version() const { return 2; }

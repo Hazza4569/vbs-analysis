@@ -15,7 +15,7 @@ utils::Selector::Pass(  Float_t pt, Float_t eta,
    if ( cut_type_ == "Muon" )
    {
       //isolation criteria      
-      if ( isol > 0.0027 )
+      if ( isol > 0.0030 )
       {
          isolCut++;
          return false;
@@ -31,7 +31,7 @@ utils::Selector::Pass(  Float_t pt, Float_t eta,
    if ( cut_type_ == "Electron" )
    {
       //isolation criteria
-      if ( isol > 0.0013 )
+      if ( isol > 0.0015 )
       {
          isolCut++;
          return false;
@@ -39,7 +39,7 @@ utils::Selector::Pass(  Float_t pt, Float_t eta,
       //pt cut
       if ( pt < 7 )
       {
-         ptCut++
+         ptCut++;
          return false;
       }
    }

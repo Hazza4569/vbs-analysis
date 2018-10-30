@@ -20,39 +20,12 @@ void initialTest::Begin(TTree * /*tree*/)
    hist_combined_mass_P = new TH1F("","di-Z combined",60,80,500);
    hist_pair_mass_P = new TH1F("","dilepton",60,0,150);
 
-   for ( std::string lepton : { "Muon", "Electron" } )
-   { 
-      n_map.insert(
-            std::pair< const std::string, TTreeReaderValue<Int_t>* >
-            ( lepton, new TTreeReaderValue<Int_t>
-              ({ fReader, (lepton + std::string("_n")).c_str() })
-            ));
-      pt_map.insert(
-            std::pair< const std::string, TTreeReaderArray<Float_t>* >
-            ( lepton, new TTreeReaderArray<Float_t>
-              ({ fReader, (lepton + std::string("_Pt")).c_str() })
-            ));
-      eta_map.insert(
-            std::pair< const std::string, TTreeReaderArray<Float_t>* >
-            ( lepton, new TTreeReaderArray<Float_t>
-              ({ fReader, (lepton + std::string("_Eta")).c_str() })
-            ));
-      phi_map.insert(
-            std::pair< const std::string, TTreeReaderArray<Float_t>* >
-            ( lepton, new TTreeReaderArray<Float_t>
-              ({ fReader, (lepton + std::string("_Phi")).c_str() })
-            ));
-      charge_map.insert(
-            std::pair< const std::string, TTreeReaderArray<Float_t>* >
-            ( lepton, new TTreeReaderArray<Float_t>
-              ({ fReader, (lepton + std::string("_Charge")).c_str() })
-            ));
-      isol_map.insert(
-            std::pair< const std::string, TTreeReaderArray<Float_t>* >
-            ( lepton, new TTreeReaderArray<Float_t>
-              ({ fReader, (lepton + std::string("_Isol")).c_str() })
-            ));
-   }
+   total_leptons_ = 0;
+   isol_rejected_ = 0;
+   pt_rejected_ = 0;
+   empty_lists_ = 0;
+   one_pair_onlys_ = 0;
+   nSignalEvents = 0;
 }
 
 void initialTest::SlaveBegin(TTree * /*tree*/)
@@ -72,6 +45,7 @@ Bool_t initialTest::Process(Long64_t entry)
    int baseline = 0; //used to shift id number of particles (i.e. their index in the array)
    //s.t. id's are unique across all particle types.
    utils::PairSet particle_pairs;
+   particle_pairs.SetMetric(this->optimisingMetric);
    //particle_pairs.SetBenchmark(Z_MASS);
 
    //========================MAP PAIRS=============================
@@ -98,7 +72,7 @@ Bool_t initialTest::Process(Long64_t entry)
       for ( Int_t i = 0; i < n; i++ )
       {
          //LEPTON SELECTION:
-         //if ( !select.Pass(pt[i],eta[i],phi[i],charge[i],isol[i]) ) continue;
+         if ( !select.Pass(pt[i],eta[i],phi[i],charge[i],isol[i]) ) continue;
 
          if ( charge[i] == -1 )
          {
@@ -111,10 +85,18 @@ Bool_t initialTest::Process(Long64_t entry)
       }
       //=============================
       
-      //check there is at least one of each:
-      if ( particles.empty() || antiparticles.empty() ) continue; 
+      total_leptons_ += select.totalCount;
+      isol_rejected_ += select.isolCut;
+      pt_rejected_ += select.ptCut; 
       
-      //if ( !select.GoodLeading() ) continue;
+      //check there is at least one of each:
+      if ( particles.empty() || antiparticles.empty() )
+      {
+         empty_lists_++;
+         continue; 
+      }
+
+      if ( !select.GoodLeading() ) continue;
 
       Float_t mass = (lepton == "Muon") ? MUON_MASS : ELECTRON_MASS;
 
@@ -148,6 +130,7 @@ Bool_t initialTest::Process(Long64_t entry)
       //zero_pairs++;
       //std::cout << "No pairs found... " << particles.size() << ","
       //            << antiparticles.size() << ".\n";
+      one_pair_onlys_++;
       return kTRUE;
    }
 
@@ -156,11 +139,16 @@ Bool_t initialTest::Process(Long64_t entry)
    {
       TLorentzVector pair_fourmomentum = chosen_pairs.Fourmomentum(i);
       hist_pair_mass_P->Fill( pair_fourmomentum.M() );
+      hist_eta_Z->Fill( pair_fourmomentum.Eta() );
       total_combined_fourmomentum += pair_fourmomentum; 
    }
 
    if ( ( chosen_pairs.M(1) - 91.19 ) < 10 )
-       hist_combined_mass_P->Fill( total_combined_fourmomentum.M() );
+   {
+       Double_t mass = total_combined_fourmomentum.M();
+       if ( mass >= signalRegionLowerBound && mass <= signalRegionUpperBound ) nSignalEvents++;
+       hist_combined_mass_P->Fill( mass );
+   }
 
    return kTRUE;
 }
@@ -175,6 +163,10 @@ void initialTest::SlaveTerminate()
 
 void initialTest::Terminate()
 {
+   printf("Total leptons: %d, Lost to isolation cuts: %d, Lost to pt cuts: %d, No single pairs: %d, \
+           No two pairs: %d.\n",
+          total_leptons_, isol_rejected_, pt_rejected_, empty_lists_, one_pair_onlys_);
+
    TCanvas *c1 = new TCanvas("c1");
    hist_combined_mass_P->Draw();
 

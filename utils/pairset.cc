@@ -1,6 +1,6 @@
 #include "pairset.hh"
 
-utils::PairSet::PairSet() : benchmark_(91.19) {};
+utils::PairSet::PairSet() : benchmark_(91.19), metric_("") {};
 
 utils::PairSet::~PairSet() {};
 
@@ -30,7 +30,7 @@ utils::PairSet::GetBestNPairs(Int_t N)
       return PairSet();
    }
 
-   std::sort(set_.begin(), set_.end(), proximal(benchmark_));
+   std::sort(set_.begin(), set_.end(), proximal(this));
 
    if ( N == 1 )
    {
@@ -80,7 +80,7 @@ utils::PairSet::GetBestNPairs(Int_t N)
 
       if ( uniques.size() == 0 )
       {
-         std::cout << "Un-unique (sum " << sum << ")\n";
+         //std::cout << "Un-unique (sum " << sum << ")\n";
          continue;
       }  
       if ( uniques.size() == 1 )
@@ -91,19 +91,19 @@ utils::PairSet::GetBestNPairs(Int_t N)
       else
       {
 //         std::cout << "size2\n";
-         Double_t smallest_mds = INT_MAX;
+         Double_t smallest_metric = INT_MAX;
          Int_t smallest_index;
          for (Int_t i = 0; i < uniques.size(); i++)
          {
             PairSet iPairs = uniques[i];
-            Double_t mass_difference_sum = 0;
+            Double_t metric = 0;
             for (Int_t j = 0; j < N; j++)
             {
-               mass_difference_sum += fabs(iPairs.M(j) - benchmark_);
+               metric += Metric(iPairs.Fourmomentum(j));
             }
-            if ( mass_difference_sum < smallest_mds )
+            if ( metric < smallest_metric )
             {
-               smallest_mds = mass_difference_sum;
+               smallest_metric = metric;
                smallest_index = i;
             }
          }
@@ -213,4 +213,22 @@ utils::PairSet::FindCombinations(Int_t total, Int_t n_nums)
    FindCombinationsUtil(arr, 0, total, total, n_nums, &rank_group, &rank_list); 
 
    return rank_list;
+}
+
+Double_t
+utils::PairSet::Metric(TLorentzVector P)
+{
+   if ( metric_ == "mds" )
+      return fabs(P.M() - benchmark_);
+   else if ( metric_ == "smds" )
+      return pow( P.M() - benchmark_, 2 );
+
+   std::cout << "Metric \"" << metric_ << "\" is not valid.\n";
+   return -1;
+}
+
+void
+utils::PairSet::SetMetric(std::string metric)
+{
+   metric_ = metric;
 }
