@@ -7,6 +7,7 @@ void metricTest()
    initialTest *reconstructor = new initialTest();
    reconstructor->signalRegionLowerBound = 180;
    reconstructor->signalRegionUpperBound = 230;
+   reconstructor->drawOn = false;
 
    for ( std::string filename : {"ZZ_10K.root", "ZZjj_10K.root"} )
    {

@@ -5,8 +5,8 @@
 // found on file: Output.ZZ.Tree.root
 //////////////////////////////////////////////////////////
 
-#ifndef initialTest_h
-#define initialTest_h
+#ifndef zInvestigation_h
+#define zInvestigation_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -34,12 +34,12 @@ struct Z_like
 };
 //=================================
 
-class initialTest : public TSelector {
+class zInvestigation : public TSelector {
 public :
    TTreeReader     fReader;  //!the tree reader
    TTree          *fChain = 0;   //!pointer to the analyzed TTree or TChain
 
-   TH1F *hist_combined_mass_P, *hist_pair_mass_P;
+   TH1F *hist_eta_P, *hist_mass_P;
    Int_t total_leptons_, isol_rejected_, pt_rejected_, empty_lists_, one_pair_onlys_;
 
    // Readers to access the data (delete the ones you do not need).
@@ -63,7 +63,7 @@ public :
    std::map< std::string, TTreeReaderArray<Float_t>* > isol_map;
    int count = 0;
 
-   std::string optimisingMetric = "smds";
+   std::string optimisingMetric = "mds";
    Float_t signalRegionLowerBound, signalRegionUpperBound;
    Int_t nSignalEvents;
    bool drawOn = true;
@@ -72,7 +72,7 @@ public :
 
    TH1F *hist_ranks, *hist_options;
 
-   initialTest(TTree * /*tree*/ =0)
+   zInvestigation(TTree * /*tree*/ =0)
    {
       for ( std::string lepton : { "Muon", "Electron" } )
       { 
@@ -108,7 +108,7 @@ public :
                ));
       }
    }
-   virtual ~initialTest() { }
+   virtual ~zInvestigation() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -123,14 +123,14 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-   ClassDef(initialTest,0);
+   ClassDef(zInvestigation,0);
 
 };
 
 #endif
 
-#ifdef initialTest_cxx
-void initialTest::Init(TTree *tree)
+#ifdef zInvestigation_cxx
+void zInvestigation::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the reader is initialized.
@@ -142,7 +142,7 @@ void initialTest::Init(TTree *tree)
    fReader.SetTree(tree);
 }
 
-Bool_t initialTest::Notify()
+Bool_t zInvestigation::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -154,4 +154,4 @@ Bool_t initialTest::Notify()
 }
 
 
-#endif // #ifdef initialTest_cxx
+#endif // #ifdef zInvestigation_cxx

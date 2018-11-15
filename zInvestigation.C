@@ -1,24 +1,24 @@
-#define initialTest_cxx
+#define zInvestigation_cxx
 // To use this file, try the following session on your Tree T:
 //
-// root> T->Process("initialTest.C")
-// root> T->Process("initialTest.C","some options")
-// root> T->Process("initialTest.C+")
+// root> T->Process("zInvestigation.C")
+// root> T->Process("zInvestigation.C","some options")
+// root> T->Process("zInvestigation.C+")
 //
 
-#include "initialTest.h"
+#include "zInvestigation.h"
 #include "utils/pairset.cc"
 #include "utils/selector.cc"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TLorentzVector.h>
 
-void initialTest::Begin(TTree * /*tree*/)
+void zInvestigation::Begin(TTree * /*tree*/)
 {
    TString option = GetOption();
 
-   hist_combined_mass_P = new TH1F("","di-Z combined",60,80,500);
-   hist_pair_mass_P = new TH1F("","dilepton",60,0,150);
+   hist_eta_P = new TH1F("","Z pseudorapidity",30,-5,5);
+   hist_mass_P = new TH1F("","Z mass",60,0,150);
 
    total_leptons_ = 0;
    isol_rejected_ = 0;
@@ -27,11 +27,11 @@ void initialTest::Begin(TTree * /*tree*/)
    one_pair_onlys_ = 0;
    nSignalEvents = 0;
 
-   hist_ranks = new TH1F("ranks_count","ranks",10,0,10);
-   hist_options = new TH1F("options_count","options",10,0,10);
+   //hist_ranks = new TH1F("ranks_count","ranks",10,0,10);
+   //hist_options = new TH1F("options_count","options",10,0,10);
 }
 
-void initialTest::SlaveBegin(TTree * /*tree*/)
+void zInvestigation::SlaveBegin(TTree * /*tree*/)
 {
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
@@ -41,9 +41,8 @@ void initialTest::SlaveBegin(TTree * /*tree*/)
 
 }
 
-Bool_t initialTest::Process(Long64_t entry)
+Bool_t zInvestigation::Process(Long64_t entry)
 {
-   std::cout << entry << '\n';
    fReader.SetEntry(entry);
 
    int baseline = 0; //used to shift id number of particles (i.e. their index in the array)
@@ -126,7 +125,7 @@ Bool_t initialTest::Process(Long64_t entry)
    //==============================================================
 
    //=======================FIND OPTIMUM===========================
-   utils::PairSet chosen_pairs = particle_pairs.GetBestNPairs(2);
+   utils::PairSet chosen_pairs = particle_pairs.GetBestNPairs(2,false);
 
    Int_t n_pairs = chosen_pairs.GetNPairs();
    if ( n_pairs == 0 )
@@ -138,29 +137,20 @@ Bool_t initialTest::Process(Long64_t entry)
       return kTRUE;
    }
 
-   hist_ranks->Add(particle_pairs.hist_ranks);
-   hist_options->Add(particle_pairs.hist_options);
+   //hist_ranks->Add(particle_pairs.hist_ranks);
+   //hist_options->Add(particle_pairs.hist_options);
 
-   TLorentzVector total_combined_fourmomentum(0,0,0,0);
    for ( Int_t i = 0; i < n_pairs; i++ )
    {
       TLorentzVector pair_fourmomentum = chosen_pairs.Fourmomentum(i);
-      hist_pair_mass_P->Fill( pair_fourmomentum.M() );
-      hist_eta_Z->Fill( pair_fourmomentum.Eta() );
-      total_combined_fourmomentum += pair_fourmomentum; 
-   }
-
-   if ( ( chosen_pairs.M(1) - 91.19 ) < 10 )
-   {
-      Double_t mass = total_combined_fourmomentum.M();
-      if ( mass >= signalRegionLowerBound && mass <= signalRegionUpperBound ) nSignalEvents++;
-      hist_combined_mass_P->Fill( mass );
+      hist_mass_P->Fill( pair_fourmomentum.M() );
+      hist_eta_P->Fill( pair_fourmomentum.Eta() );
    }
 
    return kTRUE;
 }
 
-void initialTest::SlaveTerminate()
+void zInvestigation::SlaveTerminate()
 {
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
@@ -168,29 +158,19 @@ void initialTest::SlaveTerminate()
 
 }
 
-void initialTest::Terminate()
+void zInvestigation::Terminate()
 {
    printf("Total leptons: %d, Lost to isolation cuts: %d, Lost to pt cuts: %d, No single pairs: %d, \
          No two pairs: %d.\n",
          total_leptons_, isol_rejected_, pt_rejected_, empty_lists_, one_pair_onlys_);
 
-   if (drawOn)
-   {
-      TCanvas *c1 = new TCanvas("c1");
-      hist_combined_mass_P->Draw();
+   TCanvas *c1 = new TCanvas("c1");
+   hist_mass_P->Draw();
 
-      TCanvas *c2 = new TCanvas("c2");
-      hist_pair_mass_P->Draw();
-
-      TCanvas *c3 = new TCanvas("c3");
-      hist_ranks->Draw();
-
-      TCanvas *c4 = new TCanvas("c4");
-      hist_options->Draw();
-   }
-   else
-   {
-      delete hist_ranks;
-      delete hist_options;
-   }
+   TCanvas *c2 = new TCanvas("c2");
+   hist_eta_P->Draw();
+   
+   TF1* fit1 = new TF1("fit1","[0]*exp(-[2]*(x-[1])**[3])",-5,5);
+   fit1->SetParameters(400, 0, 1.4, 2.1);
+   hist_eta_P->Fit("fit1");
 }

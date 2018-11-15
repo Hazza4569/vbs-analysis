@@ -1,8 +1,22 @@
 #include "pairset.hh"
 
-utils::PairSet::PairSet() : benchmark_(91.19), metric_("") {};
+utils::PairSet::PairSet(bool simple) : benchmark_(91.19), metric_(""), simple_(simple)
+{
+   if (!simple_)
+   {
+      hist_ranks = new TH1F("ranks","ranks",10,0,10); 
+      hist_options = new TH1F("options","options",10,0,10);  
+   }
+};
 
-utils::PairSet::~PairSet() {};
+utils::PairSet::~PairSet()
+{
+   if (!simple_)
+   {
+      delete hist_ranks;
+      delete hist_options;
+   }
+}
 
 void
 utils::PairSet::AddPair(Int_t id_1, Int_t id_2, TLorentzVector combined_fourmomentum)
@@ -23,24 +37,28 @@ utils::PairSet::SetBenchmark(Double_t benchmark)
 { benchmark_ = benchmark; }
 
 utils::PairSet
-utils::PairSet::GetBestNPairs(Int_t N)
+utils::PairSet::GetBestNPairs(Int_t N, bool requireN)
 {
-   if ( N > set_.size() || N < 1 )
+   if ( N < 1 || set_.size() == 0 ) return PairSet(true);
+
+   if ( N > set_.size() )
    {
-      return PairSet();
-   }
+      //if not all N pairs are required, work out how many may be found and recall method
+      //else return an empty set.
+      return requireN ? PairSet(true) : GetBestNPairs(set_.size());
+   } 
 
    std::sort(set_.begin(), set_.end(), proximal(this));
 
    if ( N == 1 )
    {
-      PairSet rtn;
+      PairSet rtn(true);
       rtn.AddPair(set_[0]);
       return rtn;
    }
 
-   Int_t sum = 0;
-   for (Int_t i = 0; i < N; i++) sum += i;
+   Int_t init_sum = 0;
+   for (Int_t i = 0; i < N; i++) init_sum += i;
 
    //will iteratively try the lowest ranked pairs (i.e. closest in mass to Z)
    //first. Need to test that they have unique particles, so not the same ID
@@ -49,7 +67,7 @@ utils::PairSet::GetBestNPairs(Int_t N)
    //1st and 4th rank, sum=2. GetUniqueRankSets uses this to find N different rank
    //combinations. These combinations are then compared (if multiple) to find the set with the
    //lowest sum of invariant mass differences.
-   for (; sum < set_.size(); sum++)
+   for (Int_t sum = init_sum; sum < set_.size(); sum++)
    {
       std::list< std::vector<Int_t> > rank_sets = FindCombinations( sum+N, N );
 
@@ -68,11 +86,12 @@ utils::PairSet::GetBestNPairs(Int_t N)
                failed = CommonID( set_.at(it->at(i)).first, set_.at(it->at(j)).first );
             }
          }
-      
+
          if (!failed) 
          {
-//            if ( uniques.size() == 0 ) std::cout << "Se found for event.\n";
-            PairSet unique_pairs;
+            //            if ( uniques.size() == 0 ) std::cout << "Se found for event.\n";
+            hist_ranks->Fill(sum-init_sum);
+            PairSet unique_pairs(true);
             for (Int_t i = 0; i < N; i++) unique_pairs.AddPair( set_.at(it->at(i)) );
             uniques.push_back( unique_pairs ); 
          }
@@ -83,14 +102,17 @@ utils::PairSet::GetBestNPairs(Int_t N)
          //std::cout << "Un-unique (sum " << sum << ")\n";
          continue;
       }  
+
+      hist_options->Fill(uniques.size());
+
       if ( uniques.size() == 1 )
       {
-//         std::cout << "size1\n";
+         //         std::cout << "size1\n";
          return uniques[0];
       }
       else
       {
-//         std::cout << "size2\n";
+         //         std::cout << "size2\n";
          Double_t smallest_metric = INT_MAX;
          Int_t smallest_index;
          for (Int_t i = 0; i < uniques.size(); i++)
@@ -111,7 +133,7 @@ utils::PairSet::GetBestNPairs(Int_t N)
          return uniques.at(smallest_index);
       }
    }
-   return PairSet();
+   return PairSet(true);
 }
 
    bool
@@ -215,7 +237,7 @@ utils::PairSet::FindCombinations(Int_t total, Int_t n_nums)
    return rank_list;
 }
 
-Double_t
+   Double_t
 utils::PairSet::Metric(TLorentzVector P)
 {
    if ( metric_ == "mds" )
@@ -227,7 +249,7 @@ utils::PairSet::Metric(TLorentzVector P)
    return -1;
 }
 
-void
+   void
 utils::PairSet::SetMetric(std::string metric)
 {
    metric_ = metric;

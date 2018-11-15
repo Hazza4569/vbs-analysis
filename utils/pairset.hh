@@ -8,7 +8,7 @@ namespace utils
    class PairSet
    {
       public:
-         PairSet();
+         PairSet(bool simple=false);
          ~PairSet();
 
          void AddPair(Int_t id_1, Int_t id_2, TLorentzVector combined_fourmomentum);
@@ -16,7 +16,9 @@ namespace utils
 
          void SetBenchmark(Double_t benchmark);
 
-         PairSet GetBestNPairs(Int_t N);
+         //Get N pairs that best fit the chosen metric. If requireN is true then return
+         //an empty set if a complete N pairs is not found, otherwise return all pairs found.
+         PairSet GetBestNPairs(Int_t N, bool requireN = true);
 
          Double_t M(Int_t  n); //get the invariant mass of the nth pair
 
@@ -28,18 +30,10 @@ namespace utils
 
          void SetMetric(std::string metric);
 
+         TH1F *hist_ranks;
+         TH1F *hist_options;
+
       private:
-//         struct proximal {
-//            proximal(Double_t target) { this->target_ = target; }
-//            bool operator() ( const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& lhs,
-//                              const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& rhs ) const
-//            {
-//               
-//               return fabs(lhs.second.M() - target_) < fabs(rhs.second.M() - target_);
-//            }
-//
-//            Double_t target_;
-//         };
          struct proximal {
             proximal(PairSet* ps ) { ps_ = ps; }
             bool operator() ( const std::pair< std::pair<Int_t,Int_t>, TLorentzVector >& lhs,
@@ -69,6 +63,8 @@ namespace utils
          //benchmark: value to compare invariant masses to.
          Double_t benchmark_;
          std::string metric_;
+
+         bool simple_; //if true then no counting histograms are created. To avoid memory issues.
    };
 
 }
