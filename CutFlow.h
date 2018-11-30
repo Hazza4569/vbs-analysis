@@ -10,7 +10,7 @@ class CutFlow
       CutFlow(std::string signalFile, std::string bgFile);
       virtual ~CutFlow();
 
-      void PreSelection(); //makes 4lepton and other basic cuts to clean up data
+      void PreSelection( Int_t n_on_shell ); //makes 4lepton and other basic cuts to clean up data
 
       void JetEta(bool tag=false);
       void JetEtaDiff();
@@ -20,6 +20,10 @@ class CutFlow
       void MuonPt(Int_t n); //same as JetPt with n
 
       std::vector<TLorentzVector> ReconstructVectors(std::string sample, std::string obj_type);
+      bool JetIsElectron( std::string sample, Int_t jet_n );
+
+      void ProcessAll( Int_t n_on_shell ); //par -1:no preselection 0,1,2:0,1,2 Zs required on shell
+      void FileInit();
 
       Double_t target_luminosity = 150; //fb^{-1}
 
@@ -40,6 +44,9 @@ class CutFlow
       std::map< std::string, TTreeReaderArray<Float_t>* > event_vars_;
       std::map< std::string, TTreeReaderValue<Int_t>* > object_numbers_;
       const std::string delim_ = "_";
+      std::map<std::string, std::fstream*> fileEventNums_;
+      std::map<std::string, std::string> eventFileName_;
+      bool filedEvents_ = false;
       //std::map< std::string, std::vector<Float_t> > cut_vars;
 };
 
