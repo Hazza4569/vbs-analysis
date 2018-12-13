@@ -1,0 +1,76 @@
+#!/bin/bash
+if [ $# -eq 0 ]; then
+    echo "No arguments provided"
+    exit 1
+fi
+path=~/y4p/graph_logs/$1
+ngraphs=$(expr $(ls $path/*.pdf -l|wc -l))
+makefile="$path/texmake"
+echo "#!/bin/bash" > $makefile
+chmod +x $makefile
+
+i=-1
+nstandalone=-1
+for f in ${path}/*.pdf; do
+   i=$(expr $i + 1)
+   rmd=$(( $i % 4 ))
+   if ! (( $rmd )); then
+      standalone="$path/$(expr $i / 4)_standalone.tex"
+      nstandalone=$(expr $nstandalone + 1)
+      echo "pdflatex -output-directory $path $standalone" >> $makefile
+      cat <<-END > $standalone
+\\documentclass{standalone}
+\\usepackage{graphicx}
+\\renewcommand{\\familydefault}{\\sfdefault}
+
+\\begin{document}
+\\begin{tabular}{@{}l@{}}
+   \\includegraphics{$f}
+END
+   elif ! (( $(expr $rmd - 1) )); then
+      cat << END >> $standalone
+   \\includegraphics{$f}
+   \\\\
+END
+   else
+      cat << END >> $standalone
+   \\includegraphics{$f}
+END
+   fi
+   if [ $i -eq $(expr $ngraphs - 1) ] || [ $(expr $rmd - 3) -eq 0 ]; then
+      cat << END >> $standalone
+\\end{tabular}
+\\end{document}
+END
+   fi
+done
+
+main="$path/main.tex"
+cat << END > $main
+\\documentclass[a4paper,landscape]{article}
+\\usepackage[margin=0.3cm]{geometry}
+\\usepackage{graphicx}
+\\renewcommand{\\familydefault}{\\sfdefault}
+ 
+\\begin{document}
+END
+for (( i=0; i <= $nstandalone; i++ )); do
+   standalone="$path/${i}_standalone"
+   cat << END >> $main
+   \\begin{figure}
+   \\centering
+   \\includegraphics[width=\\textwidth]{$standalone.pdf}
+   \\vspace{-3em}
+   \\end{figure}
+END
+done
+echo "\\end{document}" >> $main
+
+echo "pdflatex -output-directory $path $main" >> $makefile
+
+$makefile
+mv "$path/main.pdf" "$path/../$1.pdf"
+rm $path/*_standalone.*
+rm $path/main.*
+rm "$path/texmake"
+   
