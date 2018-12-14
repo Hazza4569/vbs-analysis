@@ -156,6 +156,8 @@ void rdf(std::string file, bool _save = false)
    { return reconstruct_dijet(pt,eta,phi,m,flav,flav_max,dR,dR_min).M(); };
    auto get_dijet_y = [&reconstruct_dijet](floats &pt, floats &eta, floats &phi, floats &m, ints &flav, int flav_max, floats &dR, float dR_min)
    { return reconstruct_dijet(pt,eta,phi,m,flav,flav_max,dR,dR_min).Rapidity(); };
+   auto get_eta_diff = [](floats &eta, ints &flav, int flav_max, floats &dR, float dR_min)
+   { return (eta[dR>=dR_min && flav<flav_max].size()<2) ? -1 : fabs(eta[dR>=dR_min && flav<flav_max].at(1)-eta[dR>=dR_min && flav<flav_max].at(0)); };
 
    //j Deinitions
    auto d_new = d_new0.Define("Jet_DeltaR_Min","(float)0.3").Define("Jet_Flav_Max","(int)4")
@@ -166,7 +168,9 @@ void rdf(std::string file, bool _save = false)
                       .Define("Dijet_Eta",get_dijet_eta,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"})
                       .Define("Dijet_Phi",get_dijet_phi,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"})
                       .Define("Dijet_M",get_dijet_m,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"})
-                      .Define("Dijet_Rapidity",get_dijet_y,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"});
+                      .Define("Dijet_Rapidity",get_dijet_y,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"})
+                      .Define("Jet12_Eta_Diff",get_eta_diff,{"Jet_Eta","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"})
+                      .Define("Jet12_Rapidity_Diff",get_eta_diff,{"Jet_Rapidity","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"});
    if (_save) d_new.Snapshot("EventTree",base_path+output_dir+file+std::string("_o")+ROOT_ft);
 
    auto d_twopair = d_new.Filter("Lepton_Pairs > 1","two_pairs");

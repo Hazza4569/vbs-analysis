@@ -1,7 +1,10 @@
+#include "../utils/constants.h"
+
 void jet_check(string date)
 {
    for (std::string file : {"ZZjj_ATLAS_500K","inclusive_ATLAS_500K"})
    {
+      //file+="_highdrcut";
       double target_luminosity = 150;
       std::string pre("/home/user108/y4p/root_output/"),post("_o.root");
 
@@ -10,6 +13,7 @@ void jet_check(string date)
       double cross_section = *(d.Take<double>("Cross_Section").begin());
       Double_t scale = target_luminosity*cross_section/n_events;
 
+      //file+="_2Z(onshell)";
       int bins(1); double rmin(0), rmax(1); char histstr[100];
       auto histname = [&bins,&rmin,&rmax,&file](string xlabel, string units){
          char rtn[500]; bool nu=(units=="");
@@ -18,6 +22,7 @@ void jet_check(string date)
          return rtn;
       };
 
+      //auto d_twoshell = d.Filter("Lepton_Pairs > 1").Filter("fabs(Dilepton_M.at(1)-Z_MASS) < 10","two_on_shell");
       auto d_new = d.Filter("Jet_Good_n > 1"); 
 
       rmin = 0; rmax = 600; bins = 80; 
@@ -40,14 +45,14 @@ void jet_check(string date)
       TH1D* hMj = (TH1D*)d_new.Histo1D({"",histname("m_{j}","GeV"),bins,rmin,rmax},"Jet_M")->Clone("Jet_M");
       rmin = -5; rmax = 5; bins = 100; 
       TH1D* hYj = (TH1D*)d_new.Histo1D({"",histname("y_{j}",""),bins,rmin,rmax},"Jet_Rapidity")->Clone("Jet_Rapidity");
-      rmin = 0; rmax = 10; bins = 100; 
+      rmin = 2e9; rmax = 3e9; bins = 100; 
       TH1D* hDR = (TH1D*)d.Histo1D({"",histname("#Delta R_{j}",""),bins,rmin,rmax},"Jet_DeltaR")->Clone("Jet_DeltaR");
 
       for (auto &h : {hPtjj,hEtajj,hPhijj,hMjj,hYjj,hPtj,hEtaj,hPhij,hMj,hYj,hDR})
       {
          h->Scale(scale);
          h->Draw("hist");
-         gPad->SaveAs((string("/home/user108/y4p/graph_logs/")+date+string("/")+string(h->GetName())+file+string(".pdf")).c_str());
+         //gPad->SaveAs((string("/home/user108/y4p/graph_logs/")+date+string("/")+string(h->GetName())+file+string(".pdf")).c_str());
       }
    }
 }
