@@ -52,7 +52,7 @@ void rdf(std::string file, bool _save = false)
    { floats rtn; for ( auto &p_i : reconstruct_pair(q,pt,eta,phi,isol,isolreq,mass) ) rtn.emplace_back(p_i.M()); return rtn; };
    auto get_pair_y = [&reconstruct_pair](floats &q, floats &pt, floats &eta, floats &phi, floats &isol, float isolreq, float mass)
    { floats rtn; for ( auto &p_i : reconstruct_pair(q,pt,eta,phi,isol,isolreq,mass) ) rtn.emplace_back(p_i.Rapidity()); return rtn; };
-   auto combined_var = [] (floats &var_ee, floats &var_mumu, floats &m_ee, floats &m_mumu) {
+   auto combined_var_Zorder = [] (floats &var_ee, floats &var_mumu, floats &m_ee, floats &m_mumu) {
       floats rtn;
       std::map<float,float> ordered_vars;
       for ( int i = 0; i < m_ee.size(); i++ ) ordered_vars.insert( make_pair(fabs(m_ee.at(i)-Z_MASS), var_ee.at(i)) );
@@ -60,6 +60,17 @@ void rdf(std::string file, bool _save = false)
       for ( auto &var_i : ordered_vars )
       {
          if (rtn.size() == 2) break;
+         rtn.emplace_back(var_i.second);
+      }
+      return rtn;
+   };
+   auto combined_var_isolated = [] (floats &var_e, floats &var_mu, floats &pt_e, floats &pt_mu, floats &isol_e, floats &isol_mu, float isol_ereq, float isol_mureq) {
+      floats rtn;
+      std::map<float,float> ordered_vars;
+      for ( int i = 0; i < pt_e[isol_e<isol_ereq].size(); i++ ) ordered_vars.insert( make_pair(1e10-pt_e[isol_e<isol_ereq].at(i), var_e[isol_e<isol_ereq].at(i)) );
+      for ( int i = 0; i < pt_mu[isol_mu<isol_mureq].size(); i++ ) ordered_vars.insert( make_pair(1e10-pt_mu[isol_mu<isol_mureq].at(i), var_mu[isol_mu<isol_mureq].at(i)) );
+      for ( auto &var_i : ordered_vars )
+      {
          rtn.emplace_back(var_i.second);
       }
       return rtn;
@@ -93,6 +104,9 @@ void rdf(std::string file, bool _save = false)
       .Define("Electron_Pairs",get_pair,{"Electron_Charge","Electron_Isol","Electron_Isol_Max"})
       .Define("Muon_Pairs",get_pair,{"Muon_Charge","Muon_Isol","Muon_Isol_Max"})
       .Define("Lepton_Pairs","Electron_Pairs+Muon_Pairs")
+      .Define("Isolated_Lepton_Pt",combined_var_isolated,{"Electron_Pt","Muon_Pt","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
+      .Define("Isolated_Lepton_Eta",combined_var_isolated,{"Electron_Eta","Muon_Eta","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
+      .Define("Isolated_Lepton_Phi",combined_var_isolated,{"Electron_Phi","Muon_Phi","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
       .Define("Dielectron_Pt",get_pair_pt,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
       .Define("Dielectron_Eta",get_pair_eta,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
       .Define("Dielectron_Phi",get_pair_phi,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
@@ -103,11 +117,11 @@ void rdf(std::string file, bool _save = false)
       .Define("Dimuon_Phi",get_pair_phi,{"Muon_Charge","Muon_Pt","Muon_Eta","Muon_Phi","Muon_Isol","Muon_Isol_Max","Muon_Mass"})
       .Define("Dimuon_M",get_pair_m,{"Muon_Charge","Muon_Pt","Muon_Eta","Muon_Phi","Muon_Isol","Muon_Isol_Max","Muon_Mass"})
       .Define("Dimuon_Rapidity",get_pair_y,{"Muon_Charge","Muon_Pt","Muon_Eta","Muon_Phi","Muon_Isol","Muon_Isol_Max","Muon_Mass"})
-      .Define("Dilepton_Pt",combined_var,{"Dielectron_Pt","Dimuon_Pt","Dielectron_M","Dimuon_M"})
-      .Define("Dilepton_Eta",combined_var,{"Dielectron_Eta","Dimuon_Eta","Dielectron_M","Dimuon_M"})
-      .Define("Dilepton_Phi",combined_var,{"Dielectron_Phi","Dimuon_Phi","Dielectron_M","Dimuon_M"})
-      .Define("Dilepton_M",combined_var,{"Dielectron_M","Dimuon_M","Dielectron_M","Dimuon_M"})
-      .Define("Dilepton_Rapidity",combined_var,{"Dielectron_Rapidity","Dimuon_Rapidity","Dielectron_M","Dimuon_M"})
+      .Define("Dilepton_Pt",combined_var_Zorder,{"Dielectron_Pt","Dimuon_Pt","Dielectron_M","Dimuon_M"})
+      .Define("Dilepton_Eta",combined_var_Zorder,{"Dielectron_Eta","Dimuon_Eta","Dielectron_M","Dimuon_M"})
+      .Define("Dilepton_Phi",combined_var_Zorder,{"Dielectron_Phi","Dimuon_Phi","Dielectron_M","Dimuon_M"})
+      .Define("Dilepton_M",combined_var_Zorder,{"Dielectron_M","Dimuon_M","Dielectron_M","Dimuon_M"})
+      .Define("Dilepton_Rapidity",combined_var_Zorder,{"Dielectron_Rapidity","Dimuon_Rapidity","Dielectron_M","Dimuon_M"})
       .Define("Tetralepton_Pt",get_quad_pt,{"Dilepton_Pt","Dilepton_Eta","Dilepton_Phi","Dilepton_M"})
       .Define("Tetralepton_Eta",get_quad_eta,{"Dilepton_Pt","Dilepton_Eta","Dilepton_Phi","Dilepton_M"})
       .Define("Tetralepton_Phi",get_quad_phi,{"Dilepton_Pt","Dilepton_Eta","Dilepton_Phi","Dilepton_M"})
