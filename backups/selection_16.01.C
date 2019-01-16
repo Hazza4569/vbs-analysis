@@ -91,23 +91,21 @@ void selection(string date)
       rmin = 0; rmax = 600; bins = 80; 
       h = (TH1F*)d_curr->Histo1D({"",histname("p_{T,l}","GeV"),bins,rmin,rmax},"Sublead_Lepton_Pt")->Clone("Sublead_Lepton_Pt");
       h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Sublead_Lepton_Pt"));
-      auto d_sublep = d_curr->Filter(
-         [&muon_subpt,&electron_subpt](floats &mu_pt, floats &e_pt, floats &mu_isol, floats &e_isol, float mu_max, float e_max){
-            int mu_size( mu_pt[mu_isol<mu_max].size() ), e_size( e_pt[e_isol<e_max].size() );
-            double mu_lead( (mu_size > 0) ? mu_pt[mu_isol<mu_max].at(0) : 0 ), e_lead( (e_size > 0) ? e_pt[e_isol<e_max].at(0) : 0 );
-            double lead, H0_sub, H0_subreq, H1_subreq, H1_isol_max; floats *H1, *H1_isol;
-            //H0 is that the subleading lepton will be of opposite type to the leading.
-            if ( e_lead > mu_lead ) {
-               lead = e_lead; H0_sub = mu_lead; H0_subreq = muon_subpt; H1_subreq = electron_subpt;
-               H1 = &e_pt; H1_isol = &e_isol; H1_isol_max = e_max;
-            } else {
-               lead = mu_lead; H0_sub = e_lead; H0_subreq = electron_subpt; H1_subreq = muon_subpt;
-               H1 = &mu_pt; H1_isol = &mu_isol; H1_isol_max = mu_max;
-            }
-            for (auto &h1pt : (*H1)[*H1_isol<H1_isol_max]) if (h1pt > H0_sub && h1pt != lead) return (h1pt > H1_subreq);
-            return (H0_sub > H0_subreq);
-         },
-         {"Muon_Pt","Electron_Pt","Muon_Isol","Electron_Isol","Muon_Isol_Max","Electron_Isol_Max"},
+      auto d_sublep = d_curr->Filter([&muon_subpt,&electron_subpt](floats &mu_pt, floats &e_pt, floats &mu_isol, floats &e_isol, float mu_max, float e_max){
+         int mu_size( mu_pt[mu_isol<mu_max].size() ), e_size( e_pt[e_isol<e_max].size() );
+         double mu_lead( (mu_size > 0) ? mu_pt[mu_isol<mu_max].at(0) : 0 ), e_lead( (e_size > 0) ? e_pt[e_isol<e_max].at(0) : 0 );
+         double lead, H0_sub, H0_subreq, H1_subreq, H1_isol_max; floats *H1, *H1_isol;
+         //H0 is that the subleading lepton will be of opposite type to the leading.
+         if ( e_lead > mu_lead ) {
+            lead = e_lead; H0_sub = mu_lead; H0_subreq = muon_subpt; H1_subreq = electron_subpt;
+            H1 = &e_pt; H1_isol = &e_isol; H1_isol_max = e_max;
+         } else {
+            lead = mu_lead; H0_sub = e_lead; H0_subreq = electron_subpt; H1_subreq = muon_subpt;
+            H1 = &mu_pt; H1_isol = &mu_isol; H1_isol_max = mu_max;
+         }
+         for (auto &h1pt : (*H1)[*H1_isol<H1_isol_max]) if (h1pt > H0_sub && h1pt != lead) return (h1pt > H1_subreq);
+         return (H0_sub > H0_subreq);
+      },{"Muon_Pt","Electron_Pt","Muon_Isol","Electron_Isol","Muon_Isol_Max","Electron_Isol_Max"},
          string("sublead lepton pt|requires second highest pt lepton satisfies p_T > ")+to_string(muon_subpt)+string(" if muon or p_T > ")+to_string(electron_subpt)+string(" if electron"));                                            //(isolated) lepton sub p_T cut
       d_curr = &d_sublep;
 

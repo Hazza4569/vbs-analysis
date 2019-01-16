@@ -64,9 +64,20 @@ void rdf(std::string file, bool _save = false)
       }
       return rtn;
    };
-   auto combined_var_isolated = [] (floats &var_e, floats &var_mu, floats &pt_e, floats &pt_mu, floats &isol_e, floats &isol_mu, float isol_ereq, float isol_mureq) {
+   auto combined_var = [] (floats &var_e, floats &var_mu, floats &pt_e, floats &pt_mu) {
       floats rtn;
       std::map<float,float> ordered_vars;
+      for ( int i = 0; i < pt_e.size(); i++ ) ordered_vars.insert( make_pair(1e10-pt_e.at(i), var_e.at(i)) );
+      for ( int i = 0; i < pt_mu.size(); i++ ) ordered_vars.insert( make_pair(1e10-pt_mu.at(i), var_mu.at(i)) );
+      for ( auto &var_i : ordered_vars )
+      {
+         rtn.emplace_back(var_i.second);
+      }
+      return rtn;
+   };
+   auto combined_var_isolated = [] (floats &var_e, floats &var_mu, floats &pt_e, floats &pt_mu, floats &isol_e, floats &isol_mu, float isol_ereq, float isol_mureq) {
+      floats rtn;
+      std::multimap<float,float> ordered_vars;
       for ( int i = 0; i < pt_e[isol_e<isol_ereq].size(); i++ ) ordered_vars.insert( make_pair(1e10-pt_e[isol_e<isol_ereq].at(i), var_e[isol_e<isol_ereq].at(i)) );
       for ( int i = 0; i < pt_mu[isol_mu<isol_mureq].size(); i++ ) ordered_vars.insert( make_pair(1e10-pt_mu[isol_mu<isol_mureq].at(i), var_mu[isol_mu<isol_mureq].at(i)) );
       for ( auto &var_i : ordered_vars )
@@ -104,9 +115,16 @@ void rdf(std::string file, bool _save = false)
       .Define("Electron_Pairs",get_pair,{"Electron_Charge","Electron_Isol","Electron_Isol_Max"})
       .Define("Muon_Pairs",get_pair,{"Muon_Charge","Muon_Isol","Muon_Isol_Max"})
       .Define("Lepton_Pairs","Electron_Pairs+Muon_Pairs")
+      .Define("Lepton_n","Electron_n+Muon_n")
+      .Define("Lepton_Pt",combined_var,{"Electron_Pt","Muon_Pt","Electron_Pt","Muon_Pt"})
+      .Define("Lepton_Eta",combined_var,{"Electron_Eta","Muon_Eta","Electron_Pt","Muon_Pt"})
+      .Define("Lepton_Phi",combined_var,{"Electron_Phi","Muon_Phi","Electron_Pt","Muon_Pt"})
+      .Define("Lepton_Isol",combined_var,{"Electron_Isol","Muon_Isol","Electron_Pt","Muon_Pt"})
       .Define("Isolated_Lepton_Pt",combined_var_isolated,{"Electron_Pt","Muon_Pt","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
       .Define("Isolated_Lepton_Eta",combined_var_isolated,{"Electron_Eta","Muon_Eta","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
       .Define("Isolated_Lepton_Phi",combined_var_isolated,{"Electron_Phi","Muon_Phi","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
+      .Define("Isolated_Lepton_n","(int)Isolated_Lepton_Pt.size()")
+      .Define("Isolated_Lepton_n2","(int) (Muon_Pt[Muon_Isol<Muon_Isol_Max].size() + Electron_Pt[Electron_Isol<Electron_Isol_Max].size())")
       .Define("Dielectron_Pt",get_pair_pt,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
       .Define("Dielectron_Eta",get_pair_eta,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
       .Define("Dielectron_Phi",get_pair_phi,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
@@ -174,7 +192,7 @@ void rdf(std::string file, bool _save = false)
    { return (eta[dR>=dR_min && flav<flav_max].size()<2) ? -1 : fabs(eta[dR>=dR_min && flav<flav_max].at(1)-eta[dR>=dR_min && flav<flav_max].at(0)); };
 
    //j Deinitions
-   auto d_new = d_new0.Define("Jet_DeltaR_Min","(float)0.3").Define("Jet_Flav_Max","(int)4")
+   auto d_new = d_new0.Define("Jet_DeltaR_Min","(float)0.3").Define("Jet_Flav_Max","(int)100")
                       .Define("Jet_DeltaR",get_delta_r,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Mass"})
                       .Define("Jet_Good_n",n_good_jets,{"Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"})
                       .Define("Jet_Rapidity",jet_y,{"Jet_Pt","Jet_Eta","Jet_Phi","Jet_M"})
