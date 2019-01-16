@@ -1,6 +1,6 @@
 #include "../utils/constants.h"
 using floats = ROOT::VecOps::RVec<float>;
-void selection(string date)
+void selectionMod(string date)
 {
    FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+string(".dat")).c_str(),"w");
    new TCanvas();
@@ -83,38 +83,6 @@ void selection(string date)
       auto d_start = d_new.Filter("true");
       auto *d_curr = &d_start;
       cutnum = 0;
-
-      //Basic preselection:
-      auto dtrig = d_curr->Filter(
-            //SINGLE LEPTONS:
-            "(Muon_Pt[Muon_Isol<Muon_Isol_Max].size() > 0 &&\
-            Muon_Pt[Muon_Isol<Muon_Isol_Max].at(0) > 27) ||"                                                         //single isolated muon, p_T > 27 GeV
-            "(Electron_Pt[Electron_Isol<Electron_Isol_Max].size() > 0 &&\
-            Electron_Pt[Electron_Isol<Electron_Isol_Max].at(0) > 27) ||"                                             //single isolated (tight?) electron, p_T > 27 GeV
-            "(Muon_n > 0 && Muon_Pt.at(0) > 52) ||"                                                                  //single muon, p_T > 52 GeV
-            "(Electron_n > 0 && Electron_Pt.at(0) > 61) ||"                                                          //single electron, p_T > 61 GeV
-            //TWO LEPTONS:
-            "(Muon_n > 1 && Muon_Pt.at(1) > 15) ||"                                                                  //two muons, each p_T > 15 GeV
-            "(Muon_n > 1 && Muon_Pt.at(0) > 23 && Muon_Pt.at(1) > 9) ||"                                             //two muons, p_T > 23, 9 GeV
-            "(Electron_n > 1 && Electron_Pt.at(1) > 18) ||"                                                          //two (v loose?) electrons, each p_T > 18 GeV
-            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 25 && Electron_Pt.at(0) > 8) ||\
-            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 25 && Muon_Pt.at(0) > 8)) )||"                //one electron one muon, p_T > 8, 25 GeV
-            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 18 && Electron_Pt.at(0) > 15) ||\
-            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 18 && Muon_Pt.at(0) > 15)) )||"               //one electron one muon, p_T > 18, 15 GeV
-            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 27 && Electron_Pt.at(0) > 9) ||\
-            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 27 && Muon_Pt.at(0) > 9)) )||"                //one electron one muon, p_T > 27, 9 GeV
-            //THREE LEPTONS:
-            "(Electron_n > 2 && Electron_Pt.at(0) > 25 && Electron_Pt.at(2) > 13) ||"                                //three (loose?) electrons, p_T > 25, 13, 13 GeV
-            "(Muon_n > 2 && Muon_Pt.at(2) > 7) ||"                                                                   //three muons, each p_T > 7 GeV
-            "(Muon_n > 2 && Muon_Pt.at(0) > 21 && Muon_Pt.at(2) > 5) ||"                                             //three muons, p_T > 21, 5, 5 GeV
-            "(Muon_n > 1 && Electron_n > 0 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 13 && Muon_Pt.at(1) > 11 && Electron_Pt.at(0) > 11) ||\
-            (Electron_Pt.at(0)>=Muon_Pt.at(0) && Electron_Pt.at(0) > 13 && Muon_Pt.at(1) > 11)) )||"                 //two muons one (loose?) electron, p_T > 11, 11, 13 GeV
-            "(Muon_n > 0 && Electron_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(1) && Muon_Pt.at(0) > 13 && Electron_Pt.at(1) > 11 && Electron_Pt.at(0) > 13) ||\
-            (Electron_Pt.at(1)>=Muon_Pt.at(0) && Electron_Pt.at(1) > 13 && Muon_Pt.at(0) > 11)) )||"                 //two (loose?) electrons one muon, p_T > 13, 13, 11 GeV
-            //SINGLE JET
-            "(Jet_n > 0 && Jet_Pt.at(0) > 435)"                                                                      //Jet (R=0.4), p_T > 435 GeV
-            , "trigger simulation|single lepton, two lepton, three lepton, or single jet triggers");
-      d_curr = &dtrig;
 
 
       rmin = 0; rmax = 600; bins = 80; 
@@ -211,6 +179,38 @@ void selection(string date)
       auto d_VBSmjj = d_curr->Filter(string("Dijet_M > ")+to_string(dijet_mass_tight),
             string("VBS dijet mass|requires m_jj > ")+to_string(dijet_mass_tight));                                 //tight dijet mass constraint for VBS selection
       d_curr = &d_VBSmjj;
+
+      //Basic preselection:
+      auto dtrig = d_curr->Filter(
+            //SINGLE LEPTONS:
+            "(Muon_Pt[Muon_Isol<Muon_Isol_Max].size() > 0 &&\
+            Muon_Pt[Muon_Isol<Muon_Isol_Max].at(0) > 27) ||"                                                         //single isolated muon, p_T > 27 GeV
+            "(Electron_Pt[Electron_Isol<Electron_Isol_Max].size() > 0 &&\
+            Electron_Pt[Electron_Isol<Electron_Isol_Max].at(0) > 27) ||"                                             //single isolated (tight?) electron, p_T > 27 GeV
+            "(Muon_n > 0 && Muon_Pt.at(0) > 52) ||"                                                                  //single muon, p_T > 52 GeV
+            "(Electron_n > 0 && Electron_Pt.at(0) > 61) ||"                                                          //single electron, p_T > 61 GeV
+            //TWO LEPTONS:
+            "(Muon_n > 1 && Muon_Pt.at(1) > 15) ||"                                                                  //two muons, each p_T > 15 GeV
+            "(Muon_n > 1 && Muon_Pt.at(0) > 23 && Muon_Pt.at(1) > 9) ||"                                             //two muons, p_T > 23, 9 GeV
+            "(Electron_n > 1 && Electron_Pt.at(1) > 18) ||"                                                          //two (v loose?) electrons, each p_T > 18 GeV
+            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 25 && Electron_Pt.at(0) > 8) ||\
+            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 25 && Muon_Pt.at(0) > 8)) )||"                //one electron one muon, p_T > 8, 25 GeV
+            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 18 && Electron_Pt.at(0) > 15) ||\
+            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 18 && Muon_Pt.at(0) > 15)) )||"               //one electron one muon, p_T > 18, 15 GeV
+            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 27 && Electron_Pt.at(0) > 9) ||\
+            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 27 && Muon_Pt.at(0) > 9)) )||"                //one electron one muon, p_T > 27, 9 GeV
+            //THREE LEPTONS:
+            "(Electron_n > 2 && Electron_Pt.at(0) > 25 && Electron_Pt.at(2) > 13) ||"                                //three (loose?) electrons, p_T > 25, 13, 13 GeV
+            "(Muon_n > 2 && Muon_Pt.at(2) > 7) ||"                                                                   //three muons, each p_T > 7 GeV
+            "(Muon_n > 2 && Muon_Pt.at(0) > 21 && Muon_Pt.at(2) > 5) ||"                                             //three muons, p_T > 21, 5, 5 GeV
+            "(Muon_n > 1 && Electron_n > 0 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 13 && Muon_Pt.at(1) > 11 && Electron_Pt.at(0) > 11) ||\
+            (Electron_Pt.at(0)>=Muon_Pt.at(0) && Electron_Pt.at(0) > 13 && Muon_Pt.at(1) > 11)) )||"                 //two muons one (loose?) electron, p_T > 11, 11, 13 GeV
+            "(Muon_n > 0 && Electron_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(1) && Muon_Pt.at(0) > 13 && Electron_Pt.at(1) > 11 && Electron_Pt.at(0) > 13) ||\
+            (Electron_Pt.at(1)>=Muon_Pt.at(0) && Electron_Pt.at(1) > 13 && Muon_Pt.at(0) > 11)) )||"                 //two (loose?) electrons one muon, p_T > 13, 13, 11 GeV
+            //SINGLE JET
+            "(Jet_n > 0 && Jet_Pt.at(0) > 435)"                                                                      //Jet (R=0.4), p_T > 435 GeV
+            , "trigger simulation|single lepton, two lepton, three lepton, or single jet triggers");
+      d_curr = &dtrig;
 
       //         .Filter("Jet_Eta.at(0)*Jet_Eta.at(1) < 0","jets opposite sign eta");                                        //jets have opposite sign eta
 
