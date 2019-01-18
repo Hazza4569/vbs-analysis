@@ -1,18 +1,20 @@
 #include "../utils/constants.h"
 using floats = ROOT::VecOps::RVec<float>;
-void selection(string date)
+void selection(string date, bool CMS = false)
 {
-   FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+string(".dat")).c_str(),"w");
+   string exper = CMS ? "CMS" : "ATLAS";
+   FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+exper+string(".dat")).c_str(),"w");
    new TCanvas();
    gStyle->SetOptStat(1111111);
-   for (std::string file : {"ZZjj_ATLAS_500K","inclusive_ATLAS_500K"})
+   vector<TH1*> output_hists;
+   for (std::string file : {string("ZZjj_")+exper+string("_500K"),string("inclusive_ATLAS_500K")})
    {
       //setup:
       double target_luminosity = 35.9; //As CMS analysis
       std::string pre("/home/user108/y4p/root_output/"),post("_o.root");
 
       ROOT::RDataFrame d("EventTree",(pre+file+post).c_str());
-      int n_events = *(d.Take<int>("Event_Count").begin());
+      int n_events = d.Histo1D("Cross_Section")->GetEntries();//*(d.Take<int>("Event_Count").begin());
       double cross_section = *(d.Take<double>("Cross_Section").begin());
       Double_t scale = target_luminosity*cross_section/n_events;
 
@@ -26,7 +28,7 @@ void selection(string date)
       int cutnum = 0;
       auto savefile = [&](string var){
          char rtn[500];
-         snprintf(rtn,500,"/home/user108/y4p/graph_logs/%s/selection1_%02d_%s_%s.pdf",date.c_str(),cutnum++,var.c_str(),file.c_str());
+         snprintf(rtn,500,"/home/user108/y4p/graph_logs/%s/selection1_%s%02d_%s_%s.pdf",date.c_str(),CMS?"CMS_":"",cutnum++,var.c_str(),file.c_str());
          return rtn;
       };
       TH1F *h;
@@ -92,28 +94,8 @@ void selection(string date)
             "(Electron_Pt[Electron_Isol<Electron_Isol_Max].size() > 0 &&\
             Electron_Pt[Electron_Isol<Electron_Isol_Max].at(0) > 27) ||"                                             //single isolated (tight?) electron, p_T > 27 GeV
             "(Muon_n > 0 && Muon_Pt.at(0) > 52) ||"                                                                  //single muon, p_T > 52 GeV
-            "(Electron_n > 0 && Electron_Pt.at(0) > 61) ||"                                                          //single electron, p_T > 61 GeV
-            //TWO LEPTONS:
-            "(Muon_n > 1 && Muon_Pt.at(1) > 15) ||"                                                                  //two muons, each p_T > 15 GeV
-            "(Muon_n > 1 && Muon_Pt.at(0) > 23 && Muon_Pt.at(1) > 9) ||"                                             //two muons, p_T > 23, 9 GeV
-            "(Electron_n > 1 && Electron_Pt.at(1) > 18) ||"                                                          //two (v loose?) electrons, each p_T > 18 GeV
-            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 25 && Electron_Pt.at(0) > 8) ||\
-            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 25 && Muon_Pt.at(0) > 8)) )||"                //one electron one muon, p_T > 8, 25 GeV
-            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 18 && Electron_Pt.at(0) > 15) ||\
-            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 18 && Muon_Pt.at(0) > 15)) )||"               //one electron one muon, p_T > 18, 15 GeV
-            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 27 && Electron_Pt.at(0) > 9) ||\
-            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 27 && Muon_Pt.at(0) > 9)) )||"                //one electron one muon, p_T > 27, 9 GeV
-            //THREE LEPTONS:
-            "(Electron_n > 2 && Electron_Pt.at(0) > 25 && Electron_Pt.at(2) > 13) ||"                                //three (loose?) electrons, p_T > 25, 13, 13 GeV
-            "(Muon_n > 2 && Muon_Pt.at(2) > 7) ||"                                                                   //three muons, each p_T > 7 GeV
-            "(Muon_n > 2 && Muon_Pt.at(0) > 21 && Muon_Pt.at(2) > 5) ||"                                             //three muons, p_T > 21, 5, 5 GeV
-            "(Muon_n > 1 && Electron_n > 0 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 13 && Muon_Pt.at(1) > 11 && Electron_Pt.at(0) > 11) ||\
-            (Electron_Pt.at(0)>=Muon_Pt.at(0) && Electron_Pt.at(0) > 13 && Muon_Pt.at(1) > 11)) )||"                 //two muons one (loose?) electron, p_T > 11, 11, 13 GeV
-            "(Muon_n > 0 && Electron_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(1) && Muon_Pt.at(0) > 13 && Electron_Pt.at(1) > 11 && Electron_Pt.at(0) > 13) ||\
-            (Electron_Pt.at(1)>=Muon_Pt.at(0) && Electron_Pt.at(1) > 13 && Muon_Pt.at(0) > 11)) )||"                 //two (loose?) electrons one muon, p_T > 13, 13, 11 GeV
-            //SINGLE JET
-            "(Jet_n > 0 && Jet_Pt.at(0) > 435)"                                                                      //Jet (R=0.4), p_T > 435 GeV
-            , "trigger simulation|single lepton, two lepton, three lepton, or single jet triggers");
+            "(Electron_n > 0 && Electron_Pt.at(0) > 61)"                                                             //single electron, p_T > 61 GeV
+            , "trigger simulation|ATLAS single lepton trigger requirements");
       d_curr = &dtrig;
 
 
@@ -222,5 +204,33 @@ void selection(string date)
                (cutDesc==" ")?"":(std::string("(")+cutDesc+std::string(")\n")).c_str() );
       } 
       fprintf(of,"\n");
+
+      h = (TH1F*)d_EWKmjj.Histo1D({"","",15,100,1600},"Dijet_M")->Clone("");
+      h->Scale(scale);
+      output_hists.push_back(h);
+      h = (TH1F*)d_VBSmjj.Histo1D({"","",16,400,2000},"Dijet_M")->Clone("");
+      h->Scale(scale);
+      output_hists.push_back(h);
    }
+   auto stack_hists = [](string name, string label, TH1* hsig, TH1* hbg){
+      auto hs = new THStack();
+
+      hbg->Add(hsig,-1);
+      for (int iBin = 1; iBin <= hbg->GetXaxis()->GetNbins(); iBin++) if (hbg->GetBinContent(iBin) < 0) hbg->SetBinContent(iBin,0);
+
+      hsig->SetFillColor(6);
+      hbg->SetFillColor(kAzure-6);
+      hbg->SetLineColorAlpha(kBlack,1);
+      hsig->SetLineColorAlpha(kBlack,1);
+
+      hs->Add(hbg);
+      hs->Add(hsig);
+      return hs;
+   };
+   auto h_ewk = stack_hists("ZZjj Dijet Mass",";m_{jj} [GeV];Events / 100 GeV",output_hists[0],output_hists[2]);
+   h_ewk->Draw("hist");
+
+   new TCanvas();
+   auto h_vbs = stack_hists("VBS Dijet Mass",";m_{jj} [GeV];Events / 100 GeV",output_hists[1],output_hists[3]);
+   h_vbs->Draw("hist");
 }

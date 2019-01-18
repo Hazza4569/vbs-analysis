@@ -1,8 +1,8 @@
 #include "../utils/constants.h"
 using floats = ROOT::VecOps::RVec<float>;
-void selectionMod(string date)
+void selection_truth(string date)
 {
-   FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+string(".dat")).c_str(),"w");
+   FILE *of = fopen((string("/home/user108/y4p/cutflows/truth_selection_cutflow_")+date+string(".dat")).c_str(),"w");
    new TCanvas();
    gStyle->SetOptStat(1111111);
    for (std::string file : {"ZZjj_ATLAS_500K","inclusive_ATLAS_500K"})
@@ -19,14 +19,14 @@ void selectionMod(string date)
       int bins(1); double rmin(0), rmax(1); char histstr[100];
       auto histname = [&bins,&rmin,&rmax,&file](string xlabel, string units){
          char rtn[500]; bool nu=(units=="");
-         snprintf(rtn,500,"%s;%s %s%s%s; Events / %g %s",file.c_str(),xlabel.c_str(),nu?"":"[",units.c_str(),nu?"":"]",
+         snprintf(rtn,500,"%s (truth level);%s %s%s%s; Events / %g %s",file.c_str(),xlabel.c_str(),nu?"":"[",units.c_str(),nu?"":"]",
                (rmax-rmin)/bins,units.c_str());
          return rtn;
       };
       int cutnum = 0;
       auto savefile = [&](string var){
          char rtn[500];
-         snprintf(rtn,500,"/home/user108/y4p/graph_logs/%s/selection1_%02d_%s_%s.pdf",date.c_str(),cutnum++,var.c_str(),file.c_str());
+         snprintf(rtn,500,"/home/user108/y4p/graph_logs/%s/selection1_truth_%02d_%s_%s.pdf",date.c_str(),cutnum++,var.c_str(),file.c_str());
          return rtn;
       };
       TH1F *h;
@@ -38,10 +38,16 @@ void selectionMod(string date)
       double jet_etamax(4.5);
       double dijet_mass_loose(100), dijet_mass_tight(400);
       double jet_eta_diff(2.4);
+      double ATLAS_e_etamax(2.4), ATLAS_mu_etamax(2.4);
 
-      auto d_new = d.Define("Lead_Lepton_Pt","Isolated_Lepton_Pt.size() < 1 ? -1 : Isolated_Lepton_Pt.at(0)")
-         .Define("Sublead_Lepton_Pt","Isolated_Lepton_Pt.size() < 2 ? -1 : Isolated_Lepton_Pt.at(1)")
-         .Define("Sublead_Jet_Pt","Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].size() < 2 ? -1 : Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].at(1)");
+      auto d_new = d.Define("Truth_Lead_Lepton_Pt","Truth_Isolated_Lepton_Pt.size() < 1 ? -1 : Truth_Isolated_Lepton_Pt.at(0)")
+         .Define("Truth_Sublead_Lepton_Pt","Truth_Isolated_Lepton_Pt.size() < 2 ? -1 : Truth_Isolated_Lepton_Pt.at(1)")
+         .Define("Sublead_Jet_Pt","Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].size() < 2 ? -1 : Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].at(1)")
+         .Define("Truth_Leptons_Contained_ATLAS",
+                 string("int rtn(0); for (int i=0; i < Truth_Lepton_n; i++) if ( abs(Truth_Lepton_Eta.at(i)) < ((abs(Truth_Lepton_ID.at(i)) == 13) ? ")
+                 + to_string(ATLAS_mu_etamax) + string(" : ") + to_string(ATLAS_e_etamax) + string(") ) rtn++; return rtn;"))
+         .Define("Truth_Leptons_Contained_CMS",
+                 "int rtn(0); for (int i=0; i < Truth_Lepton_n; i++) if ( abs(Truth_Lepton_Eta.at(i)) < ((abs(Truth_Lepton_ID.at(i)) == 13) ? 2.4 : 5.0) ) rtn++; return rtn;");
 
 //---------------------------------------hacky rdatafame filter workaround (needing RNodes in future ROOT versions-----------------------------------
 //         [&muon_subpt,&electron_subpt](floats &mu_pt, floats &e_pt, floats &mu_isol, floats &e_isol, float mu_max, float e_max){
@@ -64,16 +70,16 @@ void selectionMod(string date)
       char subptfuncstring[2000];
       snprintf(subptfuncstring,2000,
             "double muon_subpt(%f), electron_subpt(%f);"
-            "int mu_size( Muon_Pt[Muon_Isol<Muon_Isol_Max].size() ), e_size( Electron_Pt[Electron_Isol<Electron_Isol_Max].size() );"
-            "double mu_lead( (mu_size > 0) ? Muon_Pt[Muon_Isol<Muon_Isol_Max].at(0) : 0 ), e_lead( (e_size > 0) ? Electron_Pt[Electron_Isol<Electron_Isol_Max].at(0) : 0 );"
+            "int mu_size( Truth_Muon_Pt[Truth_Muon_Isol<Truth_Muon_Isol_Max].size() ), e_size( Truth_Electron_Pt[Truth_Electron_Isol<Truth_Electron_Isol_Max].size() );"
+            "double mu_lead( (mu_size > 0) ? Truth_Muon_Pt[Truth_Muon_Isol<Truth_Muon_Isol_Max].at(0) : 0 ), e_lead( (e_size > 0) ? Truth_Electron_Pt[Truth_Electron_Isol<Truth_Electron_Isol_Max].at(0) : 0 );"
             "double lead, H0_sub, H0_subreq, H1_subreq, H1_isol_max; ROOT::VecOps::RVec<float> *H1, *H1_isol;"
             //H0 is that the subleading lepton will be of opposite type to the leading.
             "if ( e_lead > mu_lead ) {"
             "   lead = e_lead; H0_sub = mu_lead; H0_subreq = muon_subpt; H1_subreq = electron_subpt;"
-            "   H1 = &Electron_Pt; H1_isol = &Electron_Isol; H1_isol_max = Electron_Isol_Max;"
+            "   H1 = &Truth_Electron_Pt; H1_isol = &Truth_Electron_Isol; H1_isol_max = Truth_Electron_Isol_Max;"
             "} else {"
             "   lead = mu_lead; H0_sub = e_lead; H0_subreq = electron_subpt; H1_subreq = muon_subpt;"
-            "   H1 = &Muon_Pt; H1_isol = &Muon_Isol; H1_isol_max = Muon_Isol_Max;"
+            "   H1 = &Truth_Muon_Pt; H1_isol = &Truth_Muon_Isol; H1_isol_max = Truth_Muon_Isol_Max;"
             "}"
             "for (auto &h1pt : (*H1)[*H1_isol<H1_isol_max]) if (h1pt > H0_sub && h1pt != lead) return (h1pt > H1_subreq);"
             "return (H0_sub > H0_subreq);",
@@ -84,51 +90,71 @@ void selectionMod(string date)
       auto *d_curr = &d_start;
       cutnum = 0;
 
+      //Basic preselection:
+      auto dtrig = d_curr->Filter(
+            //SINGLE LEPTONS:
+            "(Truth_Muon_Pt[Truth_Muon_Isol<Truth_Muon_Isol_Max].size() > 0 &&\
+            Truth_Muon_Pt[Truth_Muon_Isol<Truth_Muon_Isol_Max].at(0) > 27) ||"                                                         //single isolated muon, p_T > 27 GeV
+            "(Truth_Electron_Pt[Truth_Electron_Isol<Truth_Electron_Isol_Max].size() > 0 &&\
+            Truth_Electron_Pt[Truth_Electron_Isol<Truth_Electron_Isol_Max].at(0) > 27) ||"                                             //single isolated (tight?) electron, p_T > 27 GeV
+            "(Truth_Muon_n > 0 && Truth_Muon_Pt.at(0) > 52) ||"                                                                  //single muon, p_T > 52 GeV
+            "(Truth_Electron_n > 0 && Truth_Electron_Pt.at(0) > 61)"                                                             //single electron, p_T > 61 GeV
+            , "trigger simulation|ATLAS single lepton trigger requirements");
+      d_curr = &dtrig;
+
 
       rmin = 0; rmax = 600; bins = 80; 
-      h = (TH1F*)d_curr->Histo1D({"",histname("p_{T,l}","GeV"),bins,rmin,rmax},"Lead_Lepton_Pt")->Clone("Lead_Lepton_Pt");
-      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Lead_Lepton_Pt"));
-      auto d_leadlep = d_curr->Filter(string("(Muon_Pt[Muon_Isol<Muon_Isol_Max].size() > 0 && Muon_Pt[Muon_Isol<Muon_Isol_Max].at(0) > ")+to_string(muon_leadpt)+string(") ||"
-                  "(Electron_Pt[Electron_Isol<Electron_Isol_Max].size() > 0 && Electron_Pt[Electron_Isol<Electron_Isol_Max].at(0) > ")+to_string(electron_leadpt)
+      h = (TH1F*)d_curr->Histo1D({"",histname("p_{T,l}","GeV"),bins,rmin,rmax},"Truth_Lead_Lepton_Pt")->Clone("Truth_Lead_Lepton_Pt");
+      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Lead_Lepton_Pt"));
+      auto d_leadlep = d_curr->Filter(string("(Truth_Muon_Pt[Truth_Muon_Isol<Truth_Muon_Isol_Max].size() > 0 && Truth_Muon_Pt[Truth_Muon_Isol<Truth_Muon_Isol_Max].at(0) > ")+to_string(muon_leadpt)+string(") ||"
+                  "(Truth_Electron_Pt[Truth_Electron_Isol<Truth_Electron_Isol_Max].size() > 0 && Truth_Electron_Pt[Truth_Electron_Isol<Truth_Electron_Isol_Max].at(0) > ")+to_string(electron_leadpt)
             +string(")"),string("lead lepton pt|requires highest pt lepton satisfies p_T > ")+to_string(muon_leadpt));       //(isolated) lepton lead p_T cut
       d_curr = &d_leadlep;
 
       rmin = 0; rmax = 600; bins = 80; 
-      h = (TH1F*)d_curr->Histo1D({"",histname("p_{T,l}","GeV"),bins,rmin,rmax},"Sublead_Lepton_Pt")->Clone("Sublead_Lepton_Pt");
-      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Sublead_Lepton_Pt"));
+      h = (TH1F*)d_curr->Histo1D({"",histname("p_{T,l}","GeV"),bins,rmin,rmax},"Truth_Sublead_Lepton_Pt")->Clone("Truth_Sublead_Lepton_Pt");
+      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Sublead_Lepton_Pt"));
       auto d_sublep = d_curr->Filter(subptfuncstring,
          string("sublead lepton pt|requires second highest pt lepton satisfies p_T > ")+to_string(muon_subpt)+string(" if muon or p_T > ")+to_string(electron_subpt)+string(" if electron"));                                            //(isolated) lepton sub p_T cut
       d_curr = &d_sublep;
 
       //-------new subdivision---------------------------
       rmin = 0; rmax = 8; bins = 8; 
-      h = (TH1F*)d_curr->Histo1D({"",histname("n_{l}",""),bins,rmin,rmax},"Lepton_n")->Clone("Lepton_n");
-      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Lepton_n"));
-      auto d_4lep = d_curr->Filter("Lepton_n > 3", "four reconstructed leptons|at least four leptons detected in event");    
+      h = (TH1F*)d_curr->Histo1D({"",histname("n_{l}",""),bins,rmin,rmax},"Truth_Lepton_n")->Clone("Truth_Lepton_n");
+      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Lepton_n"));
+      auto d_4lep = d_curr->Filter("Truth_Lepton_n > 3", "four leptons present|at least four leptons created in event");    
       d_curr = &d_4lep;
 
-      rmin = 0; rmax = 8; bins = 8; 
-      h = (TH1F*)d_curr->Histo1D({"",histname("n_{l}",""),bins,rmin,rmax},"Isolated_Lepton_n")->Clone("Isolated_Lepton_n");
-      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Isolated_Lepton_n"));
-      auto d_lepisol = d_curr->Filter("Isolated_Lepton_n > 3", "four leptons isolated|at least four leptons in event satisfying isolation requirements i.e. sum of energy within deltaR=0.3 < 5%"); 
-      d_curr = &d_lepisol;
+      rmin = 0; rmax = 6; bins = 6; 
+      h = (TH1F*)d_curr->Histo1D({"",histname("n_{l}",""),bins,rmin,rmax},"Truth_Leptons_Contained_ATLAS")->Clone("Truth_Leptons_Contained_ATLAS");
+      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Leptons_Contained_ATLAS"));
+      auto d_eta = d_curr->Filter("Truth_Leptons_Contained_ATLAS > 3",
+                                  string("four leptons contained|requires |eta| < ")+to_string(ATLAS_e_etamax)+string(" for electrons and |eta| < ")
+                                  +to_string(ATLAS_mu_etamax)+string(" for muons, with at least 4 leptons satisfying this."));
+      d_curr = &d_eta;
+
+      //rmin = 0; rmax = 8; bins = 8; 
+      //h = (TH1F*)d_curr->Histo1D({"",histname("n_{l}",""),bins,rmin,rmax},"Truth_Isolated_Lepton_n")->Clone("Truth_Isolated_Lepton_n");
+      //h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Isolated_Lepton_n"));
+      //auto d_lepisol = d_curr->Filter("Truth_Isolated_Lepton_n > 3", "four leptons isolated|at least four leptons in event satisfying isolation requirements i.e. sum of energy within deltaR=0.3 < 5%"); 
+      //d_curr = &d_lepisol;
       //-------------------------------------------------
 
       rmin = 0; rmax = 4; bins = 4; 
-      h = (TH1F*)d_curr->Histo1D({"",histname("n_{ll}",""),bins,rmin,rmax},"Lepton_Pairs")->Clone("Lepton_Pairs");
-      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Lepton_Pairs"));
-      auto d_leppairs = d_curr->Filter("Lepton_Pairs > 1", "two lepton pairs|two Z candidates, i.e. opposite sign same flavour pairs");  //two pairs of opposite sign isolated leptons
+      h = (TH1F*)d_curr->Histo1D({"",histname("n_{ll}",""),bins,rmin,rmax},"Truth_Lepton_Pairs")->Clone("Truth_Lepton_Pairs");
+      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Lepton_Pairs"));
+      auto d_leppairs = d_curr->Filter("Truth_Lepton_Pairs > 1", "two lepton pairs|two Z candidates, i.e. opposite sign same flavour pairs");  //two pairs of opposite sign isolated leptons
       d_curr = &d_leppairs;
 
       rmin = 0; rmax = 140; bins = 140; 
-      h = (TH1F*)d_curr->Histo1D({"",histname("m_{ll}","GeV"),bins,rmin,rmax},"Dilepton_M")->Clone("Dilepton_M");
-      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Dilepton_M"));
+      h = (TH1F*)d_curr->Histo1D({"",histname("m_{ll}","GeV"),bins,rmin,rmax},"Truth_Dilepton_M")->Clone("Truth_Dilepton_M");
+      h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile("Truth_Dilepton_M"));
       //--------new subdivision--------------------------
-      auto d_oneshell = d_curr->Filter(string("fabs(Dilepton_M.at(0)-Z_MASS) < ")+to_string(z_shell_proximity),
+      auto d_oneshell = d_curr->Filter(string("fabs(Truth_Dilepton_M.at(0)-Z_MASS) < ")+to_string(z_shell_proximity),
             string("one on-shell Z|at least one of the lepton pairs satisfying |m_ll-m_Z| < ")+to_string(z_shell_proximity));
       d_curr = &d_oneshell;
       //-------------------------------------------------
-      auto d_twoshell = d_curr->Filter(string("fabs(Dilepton_M.at(1)-Z_MASS) < ")+to_string(z_shell_proximity),
+      auto d_twoshell = d_curr->Filter(string("fabs(Truth_Dilepton_M.at(1)-Z_MASS) < ")+to_string(z_shell_proximity),
             string("two on-shell Zs|both lepton pairs satisfying |m_ll-m_Z| < ")+to_string(z_shell_proximity));
       d_curr = &d_twoshell;
 
@@ -179,38 +205,6 @@ void selectionMod(string date)
       auto d_VBSmjj = d_curr->Filter(string("Dijet_M > ")+to_string(dijet_mass_tight),
             string("VBS dijet mass|requires m_jj > ")+to_string(dijet_mass_tight));                                 //tight dijet mass constraint for VBS selection
       d_curr = &d_VBSmjj;
-
-      //Basic preselection:
-      auto dtrig = d_curr->Filter(
-            //SINGLE LEPTONS:
-            "(Muon_Pt[Muon_Isol<Muon_Isol_Max].size() > 0 &&\
-            Muon_Pt[Muon_Isol<Muon_Isol_Max].at(0) > 27) ||"                                                         //single isolated muon, p_T > 27 GeV
-            "(Electron_Pt[Electron_Isol<Electron_Isol_Max].size() > 0 &&\
-            Electron_Pt[Electron_Isol<Electron_Isol_Max].at(0) > 27) ||"                                             //single isolated (tight?) electron, p_T > 27 GeV
-            "(Muon_n > 0 && Muon_Pt.at(0) > 52) ||"                                                                  //single muon, p_T > 52 GeV
-            "(Electron_n > 0 && Electron_Pt.at(0) > 61)"                                                             //single electron, p_T > 61 GeV
-//            //TWO LEPTONS:
-//            "(Muon_n > 1 && Muon_Pt.at(1) > 15) ||"                                                                  //two muons, each p_T > 15 GeV
-//            "(Muon_n > 1 && Muon_Pt.at(0) > 23 && Muon_Pt.at(1) > 9) ||"                                             //two muons, p_T > 23, 9 GeV
-//            "(Electron_n > 1 && Electron_Pt.at(1) > 18) ||"                                                          //two (v loose?) electrons, each p_T > 18 GeV
-//            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 25 && Electron_Pt.at(0) > 8) ||\
-//            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 25 && Muon_Pt.at(0) > 8)) )||"                //one electron one muon, p_T > 8, 25 GeV
-//            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 18 && Electron_Pt.at(0) > 15) ||\
-//            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 18 && Muon_Pt.at(0) > 15)) )||"               //one electron one muon, p_T > 18, 15 GeV
-//            "(Electron_n > 1 && Muon_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 27 && Electron_Pt.at(0) > 9) ||\
-//            (Electron_Pt.at(0) >= Muon_Pt.at(0) && Electron_Pt.at(0) > 27 && Muon_Pt.at(0) > 9)) )"                  //one electron one muon, p_T > 27, 9 GeV
-//            //THREE LEPTONS:
-//            "(Electron_n > 2 && Electron_Pt.at(0) > 25 && Electron_Pt.at(2) > 13) ||"                                //three (loose?) electrons, p_T > 25, 13, 13 GeV
-//            "(Muon_n > 2 && Muon_Pt.at(2) > 7) ||"                                                                   //three muons, each p_T > 7 GeV
-//            "(Muon_n > 2 && Muon_Pt.at(0) > 21 && Muon_Pt.at(2) > 5) ||"                                             //three muons, p_T > 21, 5, 5 GeV
-//            "(Muon_n > 1 && Electron_n > 0 && ((Muon_Pt.at(0) > Electron_Pt.at(0) && Muon_Pt.at(0) > 13 && Muon_Pt.at(1) > 11 && Electron_Pt.at(0) > 11) ||\
-//            (Electron_Pt.at(0)>=Muon_Pt.at(0) && Electron_Pt.at(0) > 13 && Muon_Pt.at(1) > 11)) )||"                 //two muons one (loose?) electron, p_T > 11, 11, 13 GeV
-//            "(Muon_n > 0 && Electron_n > 1 && ((Muon_Pt.at(0) > Electron_Pt.at(1) && Muon_Pt.at(0) > 13 && Electron_Pt.at(1) > 11 && Electron_Pt.at(0) > 13) ||\
-//            (Electron_Pt.at(1)>=Muon_Pt.at(0) && Electron_Pt.at(1) > 13 && Muon_Pt.at(0) > 11)) )"                 //two (loose?) electrons one muon, p_T > 13, 13, 11 GeV
-//            //SINGLE JET
-//            "(Jet_n > 0 && Jet_Pt.at(0) > 435)"                                                                      //Jet (R=0.4), p_T > 435 GeV
-            , "trigger simulation|ATLAS single lepton trigger");
-      d_curr = &dtrig;
 
       //         .Filter("Jet_Eta.at(0)*Jet_Eta.at(1) < 0","jets opposite sign eta");                                        //jets have opposite sign eta
 
