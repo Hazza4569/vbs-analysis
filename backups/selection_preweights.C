@@ -7,17 +7,8 @@ void selection(string date, bool CMS = false)
    new TCanvas();
    gStyle->SetOptStat(1111111);
    vector<TH1*> output_hists;
-   std::string file;
-   int cutnum = 0;
-   auto savefile = [&](string var){
-      char rtn[500];
-      snprintf(rtn,500,"/home/user108/y4p/graph_logs/%s/selection1_%s%02d_%s_%s.pdf",date.c_str(),CMS?"CMS_":"",cutnum++,var.c_str(),file.c_str());
-      return rtn;
-   };
-
-   for (std::string iFile : {string("ZZjj_")+exper+string("_500K"),string("inclusive_ATLAS_500K")})
+   for (std::string file : {string("ZZjj_")+exper+string("_500K"),string("inclusive_ATLAS_500K")})
    {
-      file = iFile;
       //setup:
       double target_luminosity = 35.9; //As CMS analysis
       std::string pre("/home/user108/y4p/root_output/"),post("_o.root");
@@ -34,8 +25,13 @@ void selection(string date, bool CMS = false)
                (rmax-rmin)/bins,units.c_str());
          return rtn;
       };
+      int cutnum = 0;
+      auto savefile = [&](string var){
+         char rtn[500];
+         snprintf(rtn,500,"/home/user108/y4p/graph_logs/%s/selection1_%s%02d_%s_%s.pdf",date.c_str(),CMS?"CMS_":"",cutnum++,var.c_str(),file.c_str());
+         return rtn;
+      };
       TH1F *h;
-      //std::vector<
 
       double muon_leadpt(20), electron_leadpt(20);
       double muon_subpt(10), electron_subpt(12);
@@ -215,12 +211,9 @@ void selection(string date, bool CMS = false)
       h = (TH1F*)d_VBSmjj.Histo1D({"","",16,400,2000},"Dijet_M")->Clone("");
       h->Scale(scale);
       output_hists.push_back(h);
-
-      cout << d_VBSmjj.Sum("Event_Weight").GetValue() << endl;
    }
-   file = "ATLAS_Combined_500K";
    auto stack_hists = [](string name, string label, TH1* hsig, TH1* hbg){
-      auto hs = new THStack(name.c_str(),label.c_str());
+      auto hs = new THStack();
 
       hbg->Add(hsig,-1);
       for (int iBin = 1; iBin <= hbg->GetXaxis()->GetNbins(); iBin++) if (hbg->GetBinContent(iBin) < 0) hbg->SetBinContent(iBin,0);
@@ -234,10 +227,10 @@ void selection(string date, bool CMS = false)
       hs->Add(hsig);
       return hs;
    };
-   auto h_ewk = stack_hists("ZZjj Dijet Mass","EWK Selection;m_{jj} [GeV];Events / 100 GeV",output_hists[0],output_hists[2]);
-   h_ewk->Draw("hist"); gPad->SaveAs(savefile("EWK_Dijet_M"));
+   auto h_ewk = stack_hists("ZZjj Dijet Mass",";m_{jj} [GeV];Events / 100 GeV",output_hists[0],output_hists[2]);
+   h_ewk->Draw("hist");
 
    new TCanvas();
-   auto h_vbs = stack_hists("VBS Dijet Mass","VBS Enhanced Selection;m_{jj} [GeV];Events / 100 GeV",output_hists[1],output_hists[3]);
-   h_vbs->Draw("hist"); gPad->SaveAs(savefile("VBS_Dijet_M"));
+   auto h_vbs = stack_hists("VBS Dijet Mass",";m_{jj} [GeV];Events / 100 GeV",output_hists[1],output_hists[3]);
+   h_vbs->Draw("hist");
 }
