@@ -110,7 +110,7 @@ void rdf(std::string file, bool _save = false)
 
    //Z definitions
    auto d_new0 = d.Define("Event_Count",n_events_str).Define("Cross_Section",cross_section_str)
-      .Define("Electron_Isol_Max","(float)0.05").Define("Muon_Isol_Max","(float)0.05")
+      .Define("Electron_Isol_Max","(float)0.35").Define("Muon_Isol_Max","(float)0.35")
       .Define("Electron_Mass","(float)ELECTRON_MASS").Define("Muon_Mass","(float)MUON_MASS")
       .Define("Electron_Pairs",get_pair,{"Electron_Charge","Electron_Isol","Electron_Isol_Max"})
       .Define("Muon_Pairs",get_pair,{"Muon_Charge","Muon_Isol","Muon_Isol_Max"})
@@ -164,7 +164,7 @@ void rdf(std::string file, bool _save = false)
                                     "for (int i=0; i < Truth_Muon_n; i++) rtn.push_back(id.at(i)/abs(id.at(i))); return rtn;")
       .Define("Truth_Muon_Isol","ROOT::VecOps::RVec<float> rtn; for (int i = 0; i < Truth_Muon_n; i++) rtn.emplace_back(0); return rtn;")
 
-      .Define("Truth_Electron_Isol_Max","(float)0.05").Define("Truth_Muon_Isol_Max","(float)0.05")
+      .Define("Truth_Electron_Isol_Max","Electron_Isol_Max").Define("Truth_Muon_Isol_Max","Muon_Isol_Max")
       .Define("Truth_Electron_Mass","(float)ELECTRON_MASS").Define("Truth_Muon_Mass","(float)MUON_MASS")
       .Define("Truth_Electron_Pairs",get_pair,{"Truth_Electron_Charge","Truth_Electron_Isol","Truth_Electron_Isol_Max"})
       .Define("Truth_Muon_Pairs",get_pair,{"Truth_Muon_Charge","Truth_Muon_Isol","Truth_Muon_Isol_Max"})
