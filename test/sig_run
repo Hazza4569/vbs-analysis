@@ -1,0 +1,3 @@
+#!/bin/bash
+
+root -l -b -q /home/user108/y4p/code/test/significance.C'("29-01")' 

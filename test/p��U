@@ -1,0 +1,57 @@
+{
+//========= Macro generated from object: significance_map/
+//========= by ROOT version6.14/06
+   
+   TH2F *significance_map__1 = new TH2F("significance_map__1","",4,-150,1850,7,-0.5,6.5);
+   significance_map__1->SetBinContent(7,0.413704);
+   significance_map__1->SetBinContent(8,0.64182);
+   significance_map__1->SetBinContent(9,0.655947);
+   significance_map__1->SetBinContent(10,0.482676);
+   significance_map__1->SetBinContent(13,0.455093);
+   significance_map__1->SetBinContent(14,0.685496);
+   significance_map__1->SetBinContent(15,0.714568);
+   significance_map__1->SetBinContent(16,0.511242);
+   significance_map__1->SetBinContent(19,0.523254);
+   significance_map__1->SetBinContent(20,0.724376);
+   significance_map__1->SetBinContent(21,0.781428);
+   significance_map__1->SetBinContent(22,0.543487);
+   significance_map__1->SetBinContent(25,0.581133);
+   significance_map__1->SetBinContent(26,0.721313);
+   significance_map__1->SetBinContent(27,0.829526);
+   significance_map__1->SetBinContent(28,0.575245);
+   significance_map__1->SetBinContent(31,0.617011);
+   significance_map__1->SetBinContent(32,0.726599);
+   significance_map__1->SetBinContent(33,0.803872);
+   significance_map__1->SetBinContent(34,0.620715);
+   significance_map__1->SetBinContent(37,0.558843);
+   significance_map__1->SetBinContent(38,0.557891);
+   significance_map__1->SetBinContent(39,0.601655);
+   significance_map__1->SetBinContent(40,0.502673);
+   significance_map__1->SetBinContent(43,0.248994);
+   significance_map__1->SetBinContent(44,0.248994);
+   significance_map__1->SetBinContent(45,0.247345);
+   significance_map__1->SetBinContent(46,0.219313);
+   significance_map__1->SetEntries(28);
+
+   Int_t ci;      // for color index setting
+   TColor *color; // for color definition with alpha
+   ci = TColor::GetColor("#000099");
+   significance_map__1->SetLineColor(ci);
+   significance_map__1->GetXaxis()->SetTitle("Required m_{jj} [GeV]");
+   significance_map__1->GetXaxis()->SetLabelFont(42);
+   significance_map__1->GetXaxis()->SetLabelSize(0.035);
+   significance_map__1->GetXaxis()->SetTitleSize(0.035);
+   significance_map__1->GetXaxis()->SetTitleFont(42);
+   significance_map__1->GetYaxis()->SetTitle("Required |#Delta#eta_{jj}|");
+   significance_map__1->GetYaxis()->SetLabelFont(42);
+   significance_map__1->GetYaxis()->SetLabelSize(0.035);
+   significance_map__1->GetYaxis()->SetTitleSize(0.035);
+   significance_map__1->GetYaxis()->SetTitleOffset(0);
+   significance_map__1->GetYaxis()->SetTitleFont(42);
+   significance_map__1->GetZaxis()->SetTitle("Significance");
+   significance_map__1->GetZaxis()->SetLabelFont(42);
+   significance_map__1->GetZaxis()->SetLabelSize(0.035);
+   significance_map__1->GetZaxis()->SetTitleSize(0.035);
+   significance_map__1->GetZaxis()->SetTitleFont(42);
+   significance_map__1->Draw("");
+}

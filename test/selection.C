@@ -1,11 +1,14 @@
 #include "../utils/constants.h"
 using floats = ROOT::VecOps::RVec<float>;
-void selection(string date, bool CMS = false)
+void selection(string date, bool bDraw = false, bool bSave = false, bool CMS = false)
 {
    string exper = CMS ? "CMS" : "ATLAS";
    FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+exper+string(".dat")).c_str(),"w");
-   new TCanvas();
-   gStyle->SetOptStat(1111111);
+   if (bDraw)
+   {
+      new TCanvas();
+      gStyle->SetOptStat(1111111);
+   }
    vector<TH1*> output_hists;
    std::string file = "";
    int cutnum = 0;
@@ -96,10 +99,10 @@ void selection(string date, bool CMS = false)
       auto *d_curr = &d_start;
       cutnum = 0;
 
-      auto make_cut = [&d,&d_curr,&scale,&unweighted_scale,&histname,&savefile,&bins,&rmin,&rmax,&cut_event_weights]
+      auto make_cut = [&d,&d_curr,&scale,&unweighted_scale,&histname,&savefile,&bins,&rmin,&rmax,&cut_event_weights,&bDraw]
       (string filterFunc, string filterName, bool makeHist=false,string plotColumn="", string graphName="", int l_bins=0, double l_rmin=0, double l_rmax=0, string xlabel="", string unit="")
       {
-         if (false/*makeHist*/)
+         if (bDraw && makeHist)
          {
             bins = l_bins; rmin=l_rmin; rmax=l_rmax;
             TH1F* h = (TH1F*)d_curr->Histo1D({"",histname(xlabel,unit),bins,rmin,rmax},plotColumn/*,"Event_Weight"*/)->Clone(graphName.c_str());
@@ -196,9 +199,13 @@ void selection(string date, bool CMS = false)
       output_hists.push_back(h);
 
       cout << d_VBSmjj.Sum("Event_Weight").GetValue() << endl;
-      d_curr->Snapshot("EventTree",pre+file+std::string("_filtered.root"));
-      d_EWKmjj->Snapshot("EventTree",pre+file+std::string("_justewk_filtered.root"));
+      if (bSave)
+      {
+         d_VBSmjj.Snapshot("EventTree",pre+file+std::string("_filtered.root"));
+         d_EWKmjj.Snapshot("EventTree",pre+file+std::string("_justewk_filtered.root"));
+      }
    }
+/*
    file = "ATLAS_Combined_500K";
    auto stack_hists = [](string name, string label, TH1* hsig, TH1* hbg){
       auto hs = new THStack(name.c_str(),label.c_str());
@@ -221,4 +228,5 @@ void selection(string date, bool CMS = false)
    new TCanvas();
    auto h_vbs = stack_hists("VBS Dijet Mass","VBS Enhanced Selection;m_{jj} [GeV];Events / 200 GeV",output_hists[1],output_hists[3]);
    h_vbs->Draw("hist"); gPad->SetLogy(1); gPad->SaveAs(savefile("VBS_Dijet_M"));
+*/
 }

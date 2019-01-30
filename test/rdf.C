@@ -9,11 +9,13 @@ void rdf(std::string file, bool _save = false)
    Int_t n_events; Double_t cross_section;
    std::fstream fs;
    fs.open( (base_path+ROOT_dir+file+dat_ft).c_str() );
-   fs >> n_events;
+   fs >> n_events; //deprecated, better to take from the histogram sizes, as overwritten below
    fs >> cross_section; 
    fs.close();
 
    ROOT::RDataFrame d("EventTree",base_path+ROOT_dir+file+ROOT_ft);
+   
+   n_events = d.Histo1D("Muon_n")->GetEntries();//*(d.Take<int>("Event_Count").begin());
 
    auto get_pair = [](floats &charge, floats &isol, float isolreq) { return (int)min(charge[charge<0 && isol<isolreq].size(), charge[charge>0 && isol<isolreq].size()); };
    auto vec_4vecs = [](floats &pt, floats &eta, floats &phi, float &m){
