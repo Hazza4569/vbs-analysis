@@ -23,8 +23,8 @@ void likelihood_significance(string date)
                       (*d_bkg.Take<double>("Cross_Section").begin()) / 
                       (*d_bkg.Take<int>("Event_Count").begin()) ;
 
-   double mjj = 980; //GeV
-   double njj = 3.4;
+   double mjj = 1000; //GeV
+   double njj = 3.5;
 
    std::string cut = string("Dijet_M > ")+to_string(mjj)+string(" && Jet12_Eta_Diff > ")+to_string(njj);
    int n_sig = *d_sig.Filter(cut).Count();
@@ -92,10 +92,10 @@ void likelihood_significance(string date)
 
    //foun it! need to use the Poisson method but run multiple times with toy experiments which
    //draw a random total num. events from a Poisson centred on our expected total.
-   int n_toys = 1000;
-   double rmin = 0;
-   double rmax = 5;
-   int bins = 100;
+   int n_toys = 10000000;
+   double rmin = -5;
+   double rmax = 10;
+   int bins = 10000;
    auto histname = [&rmin,&rmax,&bins](string xlabel, string units){
       char rtn[500]; bool nu=(units=="");
       snprintf(rtn,500,";%s %s%s%s; Events / %g %s",xlabel.c_str(),nu?"":"[",units.c_str(),nu?"":"]",
@@ -106,9 +106,9 @@ void likelihood_significance(string date)
    TRandom2 gen(1);
    std::set<double> discrete_sigfs;
 
-   for(int i = 0; i < 12/*n_toys*/; i++)
+   for(int i = 0; i < n_toys; i++)
    {
-      int test_statistic_i = i;//gen.Poisson(n_tot);
+      int test_statistic_i = gen.Poisson(n_tot);
       double p_value_i = ROOT::Math::poisson_cdf_c(test_statistic_i,n_scale_bkg);
       double significance_i = ROOT::Math::gaussian_quantile(1-p_value_i,1);
 
@@ -127,4 +127,53 @@ void likelihood_significance(string date)
    toy_significances->Draw();
    gPad->SaveAs(savefile("optimum_significance_dist","pdf").c_str());
    printf("\nPoisson method with toy experiments:\nExpected significance = %.4f +/- %.4f\n",toy_significances->GetMean(),toy_significances->GetStdDev());
+
+
+   //approximation by converting each integer of the poisson:
+   //const int max_int = 18;
+   int maximal = (n_tot > 10) ? ceil(2*n_tot) : ceil(10*n_tot);
+   for (int max_int = max(maximal-30,0); max_int < maximal; max_int++)
+   {
+      long double mean = 0;
+      double sum = 0;
+      long double arr_sigfs[max_int+1];
+      for (int i = 0; i <= max_int; i++)
+      {
+         arr_sigfs[i] = ROOT::Math::gaussian_quantile(ROOT::Math::poisson_cdf(i,n_scale_bkg),1);
+         mean +=
+            //value of significance for this integer:
+            arr_sigfs[i]
+            //probability of obtaining this integer:
+            * ROOT::Math::poisson_pdf(i,n_tot);
+      }
+      for (int i = 0; i <= max_int; i++) sum += pow(arr_sigfs[i]-mean,2);
+      double std_dev = sqrt(sum)/max_int;
+
+      printf("%d term approximation = %.4Lf +/- %.4f (or %.4Lf)\n",max_int+1,mean,std_dev,sqrt(mean));
+   }
+
+   //further testing:
+   auto calcsig = [](double n_s, double n_b, string method = "s_over_root_b",bool verbose=false)
+   {
+      if (method == "sig_over_root_b") return n_s/sqrt(n_b);
+      if (method == "poisson_seq")
+      {
+         if (verbose) printf("Sequential poisson significance calculation:\n");
+         double n_tot = n_s+n_b;
+         long double mean(0), previ;
+         for (int i = 0; i <= 20*ceil(n_tot) && (fabs(mean-previ) > 0.01 || mean < 0); i++)
+         {
+            previ = mean;
+            mean +=
+               ROOT::Math::gaussian_quantile(ROOT::Math::poisson_cdf(i,n_b),1)
+               * ROOT::Math::poisson_pdf(i,n_tot);
+            if (verbose) printf("%.4Lf\n",mean);
+            if (mean > INT_MAX) return double(previ);
+         }
+         return double(mean);
+      }
+      return -1.;
+   };
+
+   printf("result: %f\n",calcsig(n_scale_sig,n_scale_bkg,"poisson_seq",true)); 
 }

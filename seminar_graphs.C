@@ -6,7 +6,7 @@ void seminar_graphs()
    double target_luminosity = 35.9;
    double unweighted_scale = target_luminosity*cross_section/n_events;
 
-   ROOT::RDataFrame d1("EventTree","/home/user108/y4p/root_output/ZZjj_ATLAS_500K_filtered.root");
+   ROOT::RDataFrame d1("EventTree","/home/user108/y4p/root_output/ZZjj_ATLAS_1M_filtered.root");
 
    auto d_tmp0 = d1.Filter("true");
    auto d_tmp = d0.Filter("true");

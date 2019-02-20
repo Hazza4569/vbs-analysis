@@ -1,6 +1,6 @@
 #include "../utils/constants.h"
 using floats = ROOT::VecOps::RVec<float>;
-void selection(string date, bool bDraw = false, bool bSave = false, bool CMS = false)
+void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight = true, bool CMS = false)
 {
    string exper = CMS ? "CMS" : "ATLAS";
    FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+exper+string(".dat")).c_str(),"w");
@@ -14,11 +14,11 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool CMS = f
    int cutnum = 0;
    auto savefile = [&](string var){
       char rtn[800];
-      snprintf(rtn,800,"/home/user108/y4p/graph_logs/%s/selection1_%s%02d_%s_%s.pdf",date.c_str(),CMS?"CMS_":"",cutnum++,var.c_str(),file.c_str());
+      snprintf(rtn,800,"/home/user108/y4p/graph_logs/%s/selection1_%s%02d_%s_%s_weight%d.pdf",date.c_str(),CMS?"CMS_":"",cutnum++,var.c_str(),file.c_str(),(int)bWeight);
       return rtn;
    };
 
-   for (std::string iFile : {string("ZZjj_")+exper+string("_500K"),string("inclusive_ATLAS_500K")})
+   for (std::string iFile : {string("ZZjj_")+exper+string("_1M"),string("inclusive_ATLAS_5M")})
    {
       file = iFile;
       //setup:
@@ -54,7 +54,8 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool CMS = f
 
       auto d_new = d.Define("Lead_Lepton_Pt","Isolated_Lepton_Pt.size() < 1 ? -1 : Isolated_Lepton_Pt.at(0)")
          .Define("Sublead_Lepton_Pt","Isolated_Lepton_Pt.size() < 2 ? -1 : Isolated_Lepton_Pt.at(1)")
-         .Define("Sublead_Jet_Pt","Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].size() < 2 ? -1 : Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].at(1)");
+         .Define("Sublead_Jet_Pt","Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].size() < 2 ? -1 : Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].at(1)")
+         .Define("Sub_Dilepton_M","(float) ((Lepton_Pairs > 1) ? Dilepton_M.at(1) : -1)");
 
 //---------------------------------------hacky rdatafame filter workaround (needing RNodes in future ROOT versions-----------------------------------
 //         [&muon_subpt,&electron_subpt](floats &mu_pt, floats &e_pt, floats &mu_isol, floats &e_isol, float mu_max, float e_max){
@@ -93,20 +94,21 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool CMS = f
          muon_subpt, electron_subpt); 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 
-      auto d_plus = d_new.Define("Relative_Event_Weight",string("Event_Weight/")+to_string(weightsum));
+      auto d_plus = d_new.Define("Null_Weight","1.f");
 
       auto d_start = d_plus.Filter("true");
       auto *d_curr = &d_start;
       cutnum = 0;
 
-      auto make_cut = [&d,&d_curr,&scale,&unweighted_scale,&histname,&savefile,&bins,&rmin,&rmax,&cut_event_weights,&bDraw]
+      auto make_cut = [&d,&d_curr,&scale,&unweighted_scale,&histname,&savefile,&bins,&rmin,&rmax,&cut_event_weights,&bDraw,&bWeight]
       (string filterFunc, string filterName, bool makeHist=false,string plotColumn="", string graphName="", int l_bins=0, double l_rmin=0, double l_rmax=0, string xlabel="", string unit="")
       {
          if (bDraw && makeHist)
          {
             bins = l_bins; rmin=l_rmin; rmax=l_rmax;
-            TH1F* h = (TH1F*)d_curr->Histo1D({"",histname(xlabel,unit),bins,rmin,rmax},plotColumn/*,"Event_Weight"*/)->Clone(graphName.c_str());
-            h->Scale(scale); h->Draw("hist"); gPad->SaveAs(savefile(graphName));
+            TH1F* h = (TH1F*)
+               d_curr->Histo1D({"",histname(xlabel,unit),bins,rmin,rmax},plotColumn,bWeight?"Event_Weight":"Null_Weight")->Clone(graphName.c_str());
+            h->Scale(bWeight?scale:unweighted_scale); h->Draw("hist"); gPad->SaveAs(savefile(graphName));
          }
          auto d_rtn = d_curr->Filter(filterFunc,filterName);
          cut_event_weights.push_back(d_rtn.Sum("Event_Weight").GetValue());
@@ -151,7 +153,7 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool CMS = f
 
       auto d_oneshell = make_cut(string("fabs(Dilepton_M.at(0)-Z_MASS) < ")+to_string(z_shell_proximity),
             string("one on-shell Z|at least one of the lepton pairs satisfying |m_ll-m_Z| < ")+to_string(z_shell_proximity),
-            true,"Dilepton_M","Dilepton_M",140,0,140,"m_{ll}","GeV");
+            true,"Sub_Dilepton_M","Dilepton_M",140,0,140,"m_{ll,2}","GeV");
 
       auto d_twoshell = make_cut(string("fabs(Dilepton_M.at(1)-Z_MASS) < ")+to_string(z_shell_proximity),
             string("two on-shell Zs|both lepton pairs satisfying |m_ll-m_Z| < ")+to_string(z_shell_proximity));

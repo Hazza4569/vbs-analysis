@@ -1,7 +1,0 @@
-Using native /usr/bin/root
-In file included from input_line_10:1:
-/disk/homedisk/home/user108/y4p/code/test/significance.C:10:14: warning: address of stack memory associated with local variable 'rtn' returned [-Wreturn-stack-address]
-      return rtn;
-             ^~~
-Info in <TH2F::SaveAs>: C++ Macro file:  has been generated
-Info in <TCanvas::Print>: pdf file /home/user108/y4p/graph_logs/28-01/significance_2Dmap.pdf has been created
