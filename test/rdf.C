@@ -17,7 +17,7 @@ void rdf(std::string file, bool _save = false)
    
    n_events = d.Histo1D("Muon_n")->GetEntries();//*(d.Take<int>("Event_Count").begin());
 
-   auto get_pair = [](floats &charge, floats &isol, float isolreq) { return (int)min(charge[charge<0 && isol<isolreq].size(), charge[charge>0 && isol<isolreq].size()); };
+   auto get_pair = [](floats &charge, floats &isol, float isolreq) { return (int)min( charge[charge<0 && isol<isolreq].size() , charge[charge>0 && isol<isolreq].size() ); };
    auto vec_4vecs = [](floats &pt, floats &eta, floats &phi, float &m){
       std::vector<TLorentzVector> rtn;
       for (int i = 0; i < pt.size(); i++)
@@ -114,6 +114,8 @@ void rdf(std::string file, bool _save = false)
    auto d_new0 = d.Define("Event_Count",n_events_str).Define("Cross_Section",cross_section_str)
       .Define("Electron_Isol_Max","(float)0.35").Define("Muon_Isol_Max","(float)0.35")
       .Define("Electron_Mass","(float)ELECTRON_MASS").Define("Muon_Mass","(float)MUON_MASS")
+      .Define("Electron_M","ROOT::VecOps::RVec<float>(Electron_n,ELECTRON_MASS)")
+      .Define("Muon_M","ROOT::VecOps::RVec<float>(Muon_n,MUON_MASS)")
       .Define("Electron_Pairs",get_pair,{"Electron_Charge","Electron_Isol","Electron_Isol_Max"})
       .Define("Muon_Pairs",get_pair,{"Muon_Charge","Muon_Isol","Muon_Isol_Max"})
       .Define("Lepton_Pairs","Electron_Pairs+Muon_Pairs")
@@ -122,9 +124,13 @@ void rdf(std::string file, bool _save = false)
       .Define("Lepton_Eta",combined_var,{"Electron_Eta","Muon_Eta","Electron_Pt","Muon_Pt"})
       .Define("Lepton_Phi",combined_var,{"Electron_Phi","Muon_Phi","Electron_Pt","Muon_Pt"})
       .Define("Lepton_Isol",combined_var,{"Electron_Isol","Muon_Isol","Electron_Pt","Muon_Pt"})
+      .Define("Lepton_Charge",combined_var,{"Electron_Charge","Muon_Charge","Electron_Pt","Muon_Pt"})
+      .Define("Lepton_M",combined_var,{"Electron_M","Muon_M","Electron_Pt","Muon_Pt"})
       .Define("Isolated_Lepton_Pt",combined_var_isolated,{"Electron_Pt","Muon_Pt","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
       .Define("Isolated_Lepton_Eta",combined_var_isolated,{"Electron_Eta","Muon_Eta","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
       .Define("Isolated_Lepton_Phi",combined_var_isolated,{"Electron_Phi","Muon_Phi","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
+      .Define("Isolated_Lepton_Charge",combined_var_isolated,{"Electron_Charge","Muon_Charge","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
+      .Define("Isolated_Lepton_M",combined_var_isolated,{"Electron_M","Muon_M","Electron_Pt","Muon_Pt","Electron_Isol","Muon_Isol","Electron_Isol_Max","Muon_Isol_Max"})
       .Define("Isolated_Lepton_n","(int)Isolated_Lepton_Pt.size()")
       .Define("Dielectron_Pt",get_pair_pt,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})
       .Define("Dielectron_Eta",get_pair_eta,{"Electron_Charge","Electron_Pt","Electron_Eta","Electron_Phi","Electron_Isol","Electron_Isol_Max","Electron_Mass"})

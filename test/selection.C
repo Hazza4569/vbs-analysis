@@ -148,8 +148,9 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight
       auto d_lepisol = make_cut("Isolated_Lepton_n > 3", "four leptons isolated|at least four leptons in event satisfying isolation requirements i.e. sum of energy within deltaR=0.3 < 5%",
          true,"Isolated_Lepton_n","Isolated_Lepton_n",8,0,8,"n_{l}"); 
 
-      auto d_leppairs = make_cut("Lepton_Pairs > 1", "two lepton pairs|two Z candidates, i.e. opposite sign same flavour pairs",
-         true,"Lepton_Pairs","Lepton_Pairs",4,0,4,"n_{ll}");  //two pairs of opposite sign isolated leptons
+      //auto d_leppairs = make_cut("Lepton_Pairs > 1", "two lepton pairs|two Z candidates, i.e. opposite sign same flavour pairs",
+      //   true,"Lepton_Pairs","Lepton_Pairs",4,0,4,"n_{ll}");  //two pairs of opposite sign isolated leptons
+        auto d_leppairs = make_cut("Dilepton_Pt.size() > 1","two lepton pairs|two Z candidates, i.e. opposite sign same flavour pairs");
 
       auto d_oneshell = make_cut(string("fabs(Dilepton_M.at(0)-Z_MASS) < ")+to_string(z_shell_proximity),
             string("one on-shell Z|at least one of the lepton pairs satisfying |m_ll-m_Z| < ")+to_string(z_shell_proximity),

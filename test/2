@@ -1,0 +1,81 @@
+using floats = ROOT::VecOps::RVec<float>;
+void angular()
+{
+   //setup files:
+   double target_luminosity = 35.9; //As CMS analysis
+   std::string pre("/home/user108/y4p/root_output/"),post_uncut("_o.root"),post("_justewk_filtered.root");
+
+   string strSig = "ZZjj_ATLAS_1M";
+   string strBkg = "inclusive_ATLAS_5M";
+
+   ROOT::RDataFrame d_uncut("EventTree",(pre+strSig+post_uncut).c_str());
+   ROOT::RDataFrame d_sig("EventTree",(pre+strSig+post).c_str()), d_bkg("EventTree",(pre+strBkg+post).c_str());
+
+   double scale_sig = target_luminosity *
+      (*d_sig.Take<double>("Cross_Section").begin()) / 
+      (*d_sig.Take<int>("Event_Count").begin()) ;
+
+   double scale_bkg = target_luminosity *
+      (*d_bkg.Take<double>("Cross_Section").begin()) / 
+      (*d_bkg.Take<int>("Event_Count").begin()) ;
+
+   auto cos_theta_star = [](floats &lep_pt, floats &lep_eta, floats &lep_phi, floats &lep_m, floats &lep_q,
+                            floats &Z_pt,   floats &Z_eta,   floats &Z_phi,   floats &Z_m)   
+   {
+      int Z_n = Z_pt.size();
+      int lep_n = lep_pt.size();
+
+      //sort leptons into two sets of indices
+      std::set<int> pos_indi,neg_indi;
+      for (int i = 0; i < lep_n; i++)
+      {
+         if (lep_q.at(i) > 0) pos_indi.insert(i);
+         else if (lep_q.at(i) < 0) neg_indi.insert(i);
+         else printf("Error in cos_theta_star: seemingly uncharged lepton.\n");
+      }
+
+      floats rtn;
+      if (Z_n < 2) return rtn;   
+
+      std::vector<TLorentzVector> Zs;
+      for (int i = 0; i < 2; i++)
+      {
+         TLorentzVector Z; Z.SetPtEtaPhiM(Z_pt.at(i),Z_eta.at(i),Z_phi.at(i),Z_m.at(i));
+         Zs.push_back(Z); 
+      }
+      TVector3 diboson_boost = -(Zs.at(0)+Zs.at(1)).Vect()*(1./(Zs.at(0)+Zs.at(1)).E());
+
+      //main loop
+      for (int Z_i = 0; rtn.size() < Z_n; Z_i++)
+      {
+         TLorentzVector Z; Z.SetPtEtaPhiM(Z_pt.at(Z_i),Z_eta.at(Z_i),Z_phi.at(Z_i),Z_m.at(Z_i));
+         TLorentzVector pos, neg;
+         //find which leptons make up this Z
+         for (int pos_i : pos_indi) for (int neg_i : neg_indi)
+         {
+            //if ( abs(lep_m.at(pos_i) - lep_m.at(neg_i)) > 1e-10 ) continue;
+            pos.SetPtEtaPhiM(lep_pt.at(pos_i),lep_eta.at(pos_i),lep_phi.at(pos_i),lep_m.at(pos_i));
+            neg.SetPtEtaPhiM(lep_pt.at(neg_i),lep_eta.at(neg_i),lep_phi.at(neg_i),lep_m.at(neg_i));
+            
+            if ( abs((pos+neg).M() - Z.M()) < 1e-5 ) break;
+         } 
+
+         //find theta*:
+         pos.Boost(-Z.Vect()*(1./Z.E()));
+         neg.Boost(-Z.Vect()*(1./Z.E()));
+         Z.Boost(diboson_boost);
+
+         double posangle(Z.Angle(pos.Vect())), negangle(Z.Angle(pos.Vect()));       
+         rtn.push_back(cos(min(posangle,negangle)));
+      }
+      return rtn;
+   };
+
+   TH1F* h = (TH1F*) d_uncut.Define("anglediff",cos_theta_star,{"Isolated_Lepton_Pt","Isolated_Lepton_Eta","Isolated_Lepton_Phi","Isolated_Lepton_M","Isolated_Lepton_Charge","Dilepton_Pt","Dilepton_Eta","Dilepton_Phi","Dilepton_M"}) .Histo1D({"",";cos#theta*;Freq",200,-1,1},"anglediff")->Clone("h"); 
+
+   TF1* f = new TF1("f","[0]*3*( [1]*2*(1-x**2) + [2]*(1+x)**2 + [3]*(1-x)**2 )/8.",-1,1);
+   f->SetParameters(1000,0.33,0.33,0.33);
+
+   h->Draw();
+   h->Fit("f");
+}

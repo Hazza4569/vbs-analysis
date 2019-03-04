@@ -1,0 +1,17 @@
+#!/bin/bash
+#$1 = date_ran $2 = date_ofinput $3 = lum
+glum=${3/\./_}
+sourcefile="/home/user108/y4p/graph_logs/$2/significance_$3_2Dmap_recipe.C"
+outputfile="/home/user108/y4p/code/test/best_significance_$glum.C"
+proto="/home/user108/y4p/code/test/best_significance_proto.C"
+
+cat >$outputfile <<EOL
+void best_significance_$glum(string date, double lum)
+{
+EOL
+
+head $sourcefile -n 1053 | tail -n 1049 >>$outputfile
+
+cat $proto >>$outputfile
+
+root -l -b -q $outputfile"(\"$1\",$3)"

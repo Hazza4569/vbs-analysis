@@ -1,0 +1,7 @@
+Using native /usr/bin/root
+Info in <TH2F::SaveAs>: C++ Macro file: /home/user108/y4p/graph_logs/22-02/significance_500.0_2Dmap_recipe.C has been generated
+Info in <TH2F::SaveAs>: C++ Macro file: /home/user108/y4p/graph_logs/22-02/significance_500.0_sig_map_recipe.C has been generated
+Info in <TH2F::SaveAs>: C++ Macro file: /home/user108/y4p/graph_logs/22-02/significance_500.0_bkg_map_recipe.C has been generated
+Info in <TCanvas::Print>: pdf file /home/user108/y4p/graph_logs/22-02/significance_500.0_2Dmap.pdf has been created
+Info in <TCanvas::Print>: pdf file /home/user108/y4p/graph_logs/22-02/significance_500.0_sig_map.pdf has been created
+Info in <TCanvas::Print>: pdf file /home/user108/y4p/graph_logs/22-02/significance_500.0_bkg_map.pdf has been created

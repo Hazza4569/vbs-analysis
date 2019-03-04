@@ -1,0 +1,12 @@
+#!/bin/bash
+#$1 = date, $2 = lumiosity
+path='/home/user108/y4p/code/test/'
+cp $path/significance_btr.C .condor_sig_source_$2.C
+sed -i "1s/significance_btr/_condor_sig_source_$2/" .condor_sig_source_$2.C
+cat >$path/.condor_subscript_$2 <<EOL
+#!/bin/bash
+root -l -b -q $path/.condor_sig_source_$2.C'("$1","poisson_seq",$2)' 
+EOL
+chmod +x $path/.condor_subscript_$2
+
+condor_qsub $path/.condor_subscript_$2

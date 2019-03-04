@@ -1,4 +1,4 @@
-void significance_btr(string date, string pMethod = "poisson_seq", double target_luminosity=35.9)
+void _condor_sig_source_5000(string date, string pMethod = "poisson_seq", double target_luminosity=35.9)
 {
    auto calcsig = [](double n_s, double n_b, string method = "s_over_root_b",bool verbose=false)
    {
