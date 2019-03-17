@@ -65,24 +65,30 @@
 
    //setup files:
    double target_luminosity = lum; 
-   std::string pre("/home/user108/y4p/root_output/"),post("_justewk_filtered.root");
+   std::string pre("/home/user108/y4p/root_output/"),post("_justewk_filtered.root"),fullpost("_o.root");
 
    string strSig = "ZZjj_ATLAS_1M";
    string strBkg = "inclusive_ATLAS_5M";
 
    ROOT::RDataFrame d_sig("EventTree",(pre+strSig+post).c_str()), d_bkg("EventTree",(pre+strBkg+post).c_str());
 
+   string abnwcut = "fabs(Event_Weight) < 40";
+
    double scale_sig = target_luminosity *
                       (*d_sig.Take<double>("Cross_Section").begin()) / 
-                      (*d_sig.Take<int>("Event_Count").begin()) ;
+                      ROOT::RDataFrame("EventTree",pre+strSig+fullpost)
+                      .Filter(abnwcut).Sum("Event_Weight").GetValue();
+                      //(*d_sig.Take<int>("Event_Count").begin()) ;
       
    double scale_bkg = target_luminosity *
                       (*d_bkg.Take<double>("Cross_Section").begin()) / 
-                      (*d_bkg.Take<int>("Event_Count").begin()) ;
+                      ROOT::RDataFrame("EventTree",pre+strBkg+fullpost)
+                      .Filter(abnwcut).Sum("Event_Weight").GetValue();
+                      //(*d_bkg.Take<int>("Event_Count").begin()) ;
 
    std::string cut = string("Dijet_M > ")+to_string(mjj)+string(" && Jet12_Eta_Diff > ")+to_string(njj);
-   double n_sig = (*d_sig.Filter(cut).Count())*scale_sig;
-   double n_bkg = (*d_bkg.Filter(cut).Count())*scale_bkg;
+   double n_sig = d_sig.Filter(cut).Filter(abnwcut).Sum("Event_Weight").GetValue() * scale_sig;
+   double n_bkg = d_bkg.Filter(cut).Filter(abnwcut).Sum("Event_Weight").GetValue() * scale_bkg;
 
    auto MCval = calcsig(n_sig,n_bkg,"poisson_MC");
 
@@ -93,3 +99,4 @@
            "%.1f %.4f %.4f %.6e %.6e %.6e %.6e\n",lum,MCval.first,MCval.second,mjj,njj,n_sig,n_bkg);
    fclose(of);
 }
+

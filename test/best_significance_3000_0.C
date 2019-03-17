@@ -1116,31 +1116,38 @@ void best_significance_3000_0(string date, double lum)
 
    //setup files:
    double target_luminosity = lum; 
-   std::string pre("/home/user108/y4p/root_output/"),post("_justewk_filtered.root");
+   std::string pre("/home/user108/y4p/root_output/"),post("_justewk_filtered.root"),fullpost("_o.root");
 
    string strSig = "ZZjj_ATLAS_1M";
    string strBkg = "inclusive_ATLAS_5M";
 
    ROOT::RDataFrame d_sig("EventTree",(pre+strSig+post).c_str()), d_bkg("EventTree",(pre+strBkg+post).c_str());
 
+   string abnwcut = "fabs(Event_Weight) < 40";
+
    double scale_sig = target_luminosity *
                       (*d_sig.Take<double>("Cross_Section").begin()) / 
-                      (*d_sig.Take<int>("Event_Count").begin()) ;
+                      ROOT::RDataFrame("EventTree",pre+strSig+fullpost)
+                      .Filter(abnwcut).Sum("Event_Weight").GetValue();
+                      //(*d_sig.Take<int>("Event_Count").begin()) ;
       
    double scale_bkg = target_luminosity *
                       (*d_bkg.Take<double>("Cross_Section").begin()) / 
-                      (*d_bkg.Take<int>("Event_Count").begin()) ;
+                      ROOT::RDataFrame("EventTree",pre+strBkg+fullpost)
+                      .Filter(abnwcut).Sum("Event_Weight").GetValue();
+                      //(*d_bkg.Take<int>("Event_Count").begin()) ;
 
    std::string cut = string("Dijet_M > ")+to_string(mjj)+string(" && Jet12_Eta_Diff > ")+to_string(njj);
-   int n_sig = *d_sig.Filter(cut).Count();
-   int n_bkg = *d_bkg.Filter(cut).Count();
+   double n_sig = d_sig.Filter(cut).Filter(abnwcut).Sum("Event_Weight").GetValue() * scale_sig;
+   double n_bkg = d_bkg.Filter(cut).Filter(abnwcut).Sum("Event_Weight").GetValue() * scale_bkg;
 
-   auto MCval = calcsig(n_sig*scale_sig,n_bkg*scale_bkg,"poisson_MC");
+   auto MCval = calcsig(n_sig,n_bkg,"poisson_MC");
 
    char strOf[500];
    snprintf(strOf,500,"/home/user108/y4p/graph_logs/%s/opt_sig_%.1f.dat",date.c_str(),lum);
    FILE *of = fopen(strOf,"w");
-   fprintf(of,"Luminosity Significance StdDev Required m_jj Required |dn_jj|\n"
-           "%.1f %.4f %.4f %.6e %.6e\n",lum,MCval.first,MCval.second,mjj,njj);
+   fprintf(of,"Luminosity Significance StdDev Required m_jj Required |dn_jj| Signal Background\n"
+           "%.1f %.4f %.4f %.6e %.6e %.6e %.6e\n",lum,MCval.first,MCval.second,mjj,njj,n_sig,n_bkg);
    fclose(of);
 }
+

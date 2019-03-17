@@ -4,20 +4,25 @@ import matplotlib.pyplot as mpl
 from scipy.optimize import curve_fit
 import glob
 
-data_files = glob.glob('/home/user108/y4p/graph_logs/24-02_optsigs/opt_sig_*.dat');
+#data_files = glob.glob('/home/user108/y4p/graph_logs/24-02_optsigs/opt_sig_*.dat');
+data_files = glob.glob('/home/user108/y4p/graph_logs/15-03_optsigs/opt_sig_*.dat');
 lum = []
 sigf = []
 sigf_std = []
 mjj = []
 njj = []
+ns = []
+nb = []
 
 for iFile in data_files:
-    a,b,c,d,e = np.loadtxt(iFile,skiprows=1,unpack=True)
+    a,b,c,d,e,f,g = np.loadtxt(iFile,skiprows=1,unpack=True)
     lum.append(a)
     sigf.append(b)
     sigf_std.append(c)
     mjj.append(d)
     njj.append(e)
+    ns.append(f)
+    nb.append(g)
 
 print lum
 print sigf

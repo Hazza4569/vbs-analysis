@@ -3,7 +3,7 @@
 glum=${3/\./_}
 sourcefile="/home/user108/y4p/graph_logs/$2/significance_$3_2Dmap_recipe.C"
 outputfile="/home/user108/y4p/code/test/best_significance_$glum.C"
-proto="/home/user108/y4p/code/test/best_significance_proto.C"
+proto="/home/user108/y4p/code/test/best_significance_proto_two.C"
 
 cat >$outputfile <<EOL
 void best_significance_$glum(string date, double lum)

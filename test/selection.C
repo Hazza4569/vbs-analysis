@@ -2,6 +2,7 @@
 using floats = ROOT::VecOps::RVec<float>;
 void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight = true, bool CMS = false)
 {
+   string abnwcut = "fabs(Event_Weight) < 40";
    string exper = CMS ? "CMS" : "ATLAS";
    FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+exper+string(".dat")).c_str(),"w");
    if (bDraw)
@@ -29,7 +30,7 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight
       int n_events = d.Histo1D("Cross_Section")->GetEntries();//*(d.Take<int>("Event_Count").begin());
       double cross_section = *(d.Take<double>("Cross_Section").begin());
       double unweighted_scale = target_luminosity*cross_section/n_events;
-      double weightsum = d.Sum("Event_Weight").GetValue();
+      double weightsum = d.Filter(abnwcut).Sum("Event_Weight").GetValue();
       double scale = n_events*unweighted_scale/weightsum;
 
       printf("%s sum of weights: %e\n",file.c_str(),weightsum);
@@ -55,7 +56,8 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight
       auto d_new = d.Define("Lead_Lepton_Pt","Isolated_Lepton_Pt.size() < 1 ? -1 : Isolated_Lepton_Pt.at(0)")
          .Define("Sublead_Lepton_Pt","Isolated_Lepton_Pt.size() < 2 ? -1 : Isolated_Lepton_Pt.at(1)")
          .Define("Sublead_Jet_Pt","Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].size() < 2 ? -1 : Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].at(1)")
-         .Define("Sub_Dilepton_M","(float) ((Lepton_Pairs > 1) ? Dilepton_M.at(1) : -1)");
+         .Define("Sub_Dilepton_M","(float) ((Lepton_Pairs > 1) ? Dilepton_M.at(1) : -1)")
+         .Filter(abnwcut);
 
 //---------------------------------------hacky rdatafame filter workaround (needing RNodes in future ROOT versions-----------------------------------
 //         [&muon_subpt,&electron_subpt](floats &mu_pt, floats &e_pt, floats &mu_isol, floats &e_isol, float mu_max, float e_max){

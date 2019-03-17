@@ -160,6 +160,7 @@ void rdf(std::string file, bool _save = false)
       .Define("Truth_Electron_Eta","Truth_Lepton_Eta[abs(Truth_Lepton_ID)==11]")
       .Define("Truth_Electron_Phi","Truth_Lepton_Phi[abs(Truth_Lepton_ID)==11]")
       .Define("Truth_Electron_n","(int)Truth_Electron_Pt.size()")
+      .Define("Truth_Electron_M","ROOT::VecOps::RVec<float>(Truth_Electron_n,ELECTRON_MASS)")
       .Define("Truth_Electron_Charge","auto id = Truth_Lepton_ID[abs(Truth_Lepton_ID)==11]; ROOT::VecOps::RVec<float> rtn;"
                                     "for (int i=0; i < Truth_Electron_n; i++) rtn.push_back(id.at(i)/abs(id.at(i))); return rtn;")
       .Define("Truth_Electron_Isol","ROOT::VecOps::RVec<float> rtn; for (int i = 0; i < Truth_Electron_n; i++) rtn.emplace_back(0); return rtn;")
@@ -168,6 +169,7 @@ void rdf(std::string file, bool _save = false)
       .Define("Truth_Muon_Eta","Truth_Lepton_Eta[abs(Truth_Lepton_ID)==13]")
       .Define("Truth_Muon_Phi","Truth_Lepton_Phi[abs(Truth_Lepton_ID)==13]")
       .Define("Truth_Muon_n","(int)Truth_Muon_Pt.size()")
+      .Define("Truth_Muon_M","ROOT::VecOps::RVec<float>(Truth_Muon_n,MUON_MASS)")
       .Define("Truth_Muon_Charge","auto id = Truth_Lepton_ID[abs(Truth_Lepton_ID)==13]; ROOT::VecOps::RVec<float> rtn;"
                                     "for (int i=0; i < Truth_Muon_n; i++) rtn.push_back(id.at(i)/abs(id.at(i))); return rtn;")
       .Define("Truth_Muon_Isol","ROOT::VecOps::RVec<float> rtn; for (int i = 0; i < Truth_Muon_n; i++) rtn.emplace_back(0); return rtn;")
@@ -178,12 +180,18 @@ void rdf(std::string file, bool _save = false)
       .Define("Truth_Muon_Pairs",get_pair,{"Truth_Muon_Charge","Truth_Muon_Isol","Truth_Muon_Isol_Max"})
       .Define("Truth_Lepton_Pairs","Truth_Electron_Pairs+Truth_Muon_Pairs")
       .Define("Truth_Lepton_Isol",combined_var,{"Truth_Electron_Isol","Truth_Muon_Isol","Truth_Electron_Pt","Truth_Muon_Pt"})
+      .Define("Truth_Lepton_Charge",combined_var,{"Truth_Electron_Charge","Truth_Muon_Charge","Truth_Electron_Pt","Truth_Muon_Pt"})
+      .Define("Truth_Lepton_M",combined_var,{"Truth_Electron_M","Truth_Muon_M","Truth_Electron_Pt","Truth_Muon_Pt"})
       .Define("Truth_Isolated_Lepton_Pt",combined_var_isolated,
          {"Truth_Electron_Pt","Truth_Muon_Pt","Truth_Electron_Pt","Truth_Muon_Pt","Truth_Electron_Isol","Truth_Muon_Isol","Truth_Electron_Isol_Max","Truth_Muon_Isol_Max"})
       .Define("Truth_Isolated_Lepton_Eta",combined_var_isolated,
          {"Truth_Electron_Eta","Truth_Muon_Eta","Truth_Electron_Pt","Truth_Muon_Pt","Truth_Electron_Isol","Truth_Muon_Isol","Truth_Electron_Isol_Max","Truth_Muon_Isol_Max"})
       .Define("Truth_Isolated_Lepton_Phi",combined_var_isolated,
          {"Truth_Electron_Phi","Truth_Muon_Phi","Truth_Electron_Pt","Truth_Muon_Pt","Truth_Electron_Isol","Truth_Muon_Isol","Truth_Electron_Isol_Max","Truth_Muon_Isol_Max"})
+      .Define("Truth_Isolated_Lepton_Charge",combined_var_isolated,
+         {"Truth_Electron_Charge","Truth_Muon_Charge","Truth_Electron_Pt","Truth_Muon_Pt","Truth_Electron_Isol","Truth_Muon_Isol","Truth_Electron_Isol_Max","Truth_Muon_Isol_Max"})
+      .Define("Truth_Isolated_Lepton_M",combined_var_isolated,
+         {"Truth_Electron_M","Truth_Muon_M","Truth_Electron_Pt","Truth_Muon_Pt","Truth_Electron_Isol","Truth_Muon_Isol","Truth_Electron_Isol_Max","Truth_Muon_Isol_Max"})
       .Define("Truth_Isolated_Lepton_n","(int)Truth_Isolated_Lepton_Pt.size()")
       .Define("Truth_Dielectron_Pt",get_pair_pt,{"Truth_Electron_Charge","Truth_Electron_Pt","Truth_Electron_Eta","Truth_Electron_Phi","Truth_Electron_Isol","Truth_Electron_Isol_Max","Truth_Electron_Mass"})
       .Define("Truth_Dielectron_Eta",get_pair_eta,{"Truth_Electron_Charge","Truth_Electron_Pt","Truth_Electron_Eta","Truth_Electron_Phi","Truth_Electron_Isol","Truth_Electron_Isol_Max","Truth_Electron_Mass"})
