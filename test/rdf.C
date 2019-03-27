@@ -275,6 +275,7 @@ void rdf(std::string file, bool _save = false)
                       .Define("Jet12_Rapidity_Diff",get_eta_diff,{"Jet_Rapidity","Jet_Flav","Jet_Flav_Max","Jet_DeltaR","Jet_DeltaR_Min"});
 
    if (_save) d_new.Snapshot("EventTree",base_path+output_dir+file+std::string("_o")+ROOT_ft);
+   printf("saved\n");
 
    auto d_twopair = d_new.Filter("Lepton_Pairs > 1","two_pairs");
    auto d_twoshell = d_twopair.Filter("fabs(Dilepton_M.at(1)-Z_MASS) < 10","two_on_shell");
@@ -310,17 +311,17 @@ void rdf(std::string file, bool _save = false)
    auto d_twojet = d_new.Filter("Jet_Good_n > 1", "two_good_jets");
    d_new.Filter("Jet_n > 1", "two_jets");   
 
-   FILE *of = fopen((base_path+output_dir+file+std::string("_cutflow.dat")).c_str(),"w");
-
-   int i = 0;
-   for (auto &&cut : d.Report())
-   {
-      if ( cut.GetName() == "4e_optimal" )
-      {
-         i++;
-         if ( i == 1 ) fprintf( of, "\nRequiring any two pairs:\n" );
-         else if ( i == 2 ) fprintf( of, "\nRequiring two pairs on the Z mass shell (10 GeV margin):\n" );
-      }
-      fprintf( of, "%-22spass=%-10llu\t\tall=%-10llu\t--\t%.3f %%\n", (cut.GetName()+std::string(":")).c_str(), cut.GetPass(), cut.GetAll(), cut.GetEff() );
-   } 
+//   FILE *of = fopen((base_path+output_dir+file+std::string("_cutflow.dat")).c_str(),"w");
+//
+//   int i = 0;
+//   for (auto &&cut : d.Report())
+//   {
+//      if ( cut.GetName() == "4e_optimal" )
+//      {
+//         i++;
+//         if ( i == 1 ) fprintf( of, "\nRequiring any two pairs:\n" );
+//         else if ( i == 2 ) fprintf( of, "\nRequiring two pairs on the Z mass shell (10 GeV margin):\n" );
+//      }
+//      fprintf( of, "%-22spass=%-10llu\t\tall=%-10llu\t--\t%.3f %%\n", (cut.GetName()+std::string(":")).c_str(), cut.GetPass(), cut.GetAll(), cut.GetEff() );
+//   } 
 }

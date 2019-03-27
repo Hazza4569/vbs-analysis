@@ -6,6 +6,7 @@ import glob
 
 #data_files = glob.glob('/home/user108/y4p/graph_logs/24-02_optsigs/opt_sig_*.dat');
 data_files = glob.glob('/home/user108/y4p/graph_logs/15-03_optsigs/opt_sig_*.dat');
+data_files = glob.glob('/home/user108/y4p/graph_logs/27-03/opt_sig_*.dat');
 lum = []
 sigf = []
 sigf_std = []
@@ -31,9 +32,9 @@ print mjj
 print njj
 
 xmin = 2e1
-xmax = 4000
+xmax = 5000
 ymin = 0
-ymax = 8
+ymax = 12
 
 hel = {'fontname':''}
 
@@ -45,7 +46,8 @@ errstyle = {'marker':'o','color':'black','linestyle':'','markersize':6,'capsize'
 legstyle = {'loc':2,'bbox_to_anchor':(.05,.95),'framealpha':0}
 
 mpl.figure()
-mpl.semilogx(1,10,label='Data',**datastyle);
+mpl.loglog(1,10,label='Data',**datastyle);
+#mpl.semilogx(1,10,label='Data',**datastyle);
 mpl.semilogx([xmin,xmax],[5,5],**siglinestyle)
 mpl.semilogx([149,149],[ymin,ymax],**lumlinestyle)
 mpl.plot([300,300],[ymin,ymax],**lumlinestyle)

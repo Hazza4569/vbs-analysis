@@ -13,7 +13,7 @@ void significance_btr(string date, string pMethod = "poisson_seq", double target
             previ = mean;
             double pois = ROOT::Math::poisson_pdf(i,n_tot);
             mean +=
-               ROOT::Math::gaussian_quantile(0.5*(1+ROOT::Math::poisson_cdf(i-1,n_b)),1)
+               ROOT::Math::gaussian_quantile_c(0.5*ROOT::Math::poisson_cdf_c(i-1,n_b),1)
                * pois;
             pois_sum += pois;
             if (verbose) printf("%.4Lf\n",mean);
@@ -34,7 +34,7 @@ void significance_btr(string date, string pMethod = "poisson_seq", double target
             int test_statistic_i = gen.Poisson(n_s+n_b); //minus one needed so that p-value is probability of greater than *or equal to*
                                                            //otherwise the cdf function will exclude the current value
             double p_value_i = (test_statistic_i==0)?1:ROOT::Math::poisson_cdf_c(test_statistic_i-1,n_b);
-            double significance_i = ROOT::Math::gaussian_quantile(1-.5*p_value_i,1);
+            double significance_i = ROOT::Math::gaussian_quantile_c(.5*p_value_i,1);
             toy_significances->Fill(significance_i);
          }
          toy_significances->Draw();
@@ -55,95 +55,103 @@ void significance_btr(string date, string pMethod = "poisson_seq", double target
 
    string strSig = "ZZjj_ATLAS_1M";
    string strBkg = "inclusive_ATLAS_5M";
+   string strBkg2 = "ZZgg_ATLAS_600K";
 
    ROOT::RDataFrame d_sig("EventTree",(pre+strSig+post).c_str()), d_bkg("EventTree",(pre+strBkg+post).c_str());
+   ROOT::RDataFrame d_bkg2("EventTree",(pre+strBkg2+post).c_str());
 
    double scale_sig = target_luminosity *
       (*d_sig.Take<double>("Cross_Section").begin()) / 
-      (*d_sig.Take<int>("Event_Count").begin()) ;
+      (*d_sig.Take<float>("Weights_Sum").begin()) ;
 
    double scale_bkg = target_luminosity *
       (*d_bkg.Take<double>("Cross_Section").begin()) / 
-      (*d_bkg.Take<int>("Event_Count").begin()) ;
+      (*d_bkg.Take<float>("Weights_Sum").begin()) ;
+
+   double scale_bkg2 = target_luminosity *
+      (*d_bkg2.Take<double>("Cross_Section").begin()) / 
+      (*d_bkg2.Take<float>("Weights_Sum").begin()) ;
 
    //define grid:
    double mjj_min = 100;
    double mjj_max = 2100;//1600;
-   double mjj_stp = 50;
+   double mjj_stp = 100;//50;
    int mjj_n = double(mjj_max-mjj_min)/mjj_stp + 1;
 
    double njj_min = 0;
    double njj_max = 6;
-   double njj_stp = 0.25;
+   double njj_stp = .5;//0.25;
    int njj_n = double(njj_max-njj_min)/njj_stp + 1;
 
    TH2F* significance_map = new TH2F("significance_map",";Required m_{jj} [GeV];Required |#Delta#eta_{jj}|;Significance",
          mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp,
          njj_n, njj_min-.5*njj_stp, njj_max+.5*njj_stp);
-   TH2F* n_map_sig        = new TH2F("n_map_sig",";Required m_{jj} [GeV];Required |#Delta#eta_{jj}|;Events",
-         mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp,
-         njj_n, njj_min-.5*njj_stp, njj_max+.5*njj_stp);
-   TH2F* n_map_bkg        = new TH2F("n_map_bkg",";Required m_{jj} [GeV];Required |#Delta#eta_{jj}|;Events",
-         mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp,
-         njj_n, njj_min-.5*njj_stp, njj_max+.5*njj_stp);
-
-   std::vector<TH1F*> stats_limit;
-   
-   std::vector<int> n_statslim = {5,10,20}; //draw line marking where each of these regions end
-
-   for (int i = 0; i < n_statslim.size(); i++)
-      stats_limit.push_back(new TH1F((std::string("stats_limit")+to_string(i)).c_str(),"",mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp));
+//   TH2F* n_map_sig        = new TH2F("n_map_sig",";Required m_{jj} [GeV];Required |#Delta#eta_{jj}|;Events",
+//         mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp,
+//         njj_n, njj_min-.5*njj_stp, njj_max+.5*njj_stp);
+//   TH2F* n_map_bkg        = new TH2F("n_map_bkg",";Required m_{jj} [GeV];Required |#Delta#eta_{jj}|;Events",
+//         mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp,
+//         njj_n, njj_min-.5*njj_stp, njj_max+.5*njj_stp);
+//
+//   std::vector<TH1F*> stats_limit;
+//   
+//   std::vector<int> n_statslim = {5,10,20}; //draw line marking where each of these regions end
+//
+//   for (int i = 0; i < n_statslim.size(); i++)
+//      stats_limit.push_back(new TH1F((std::string("stats_limit")+to_string(i)).c_str(),"",mjj_n, mjj_min-.5*mjj_stp, mjj_max+.5*mjj_stp));
 
    //iterate:
    for (int i=1; i<=mjj_n; i++)
    {
-      std::vector<bool> limit_reached(stats_limit.size(),false);
+//      std::vector<bool> limit_reached(stats_limit.size(),false);
       for (int j=1; j<=njj_n; j++)
       {
          double mjj = mjj_min + (i-1)*mjj_stp;
          double njj = njj_min + (j-1)*njj_stp;
 
          std::string cut = string("Dijet_M > ")+to_string(mjj)+string(" && Jet12_Eta_Diff > ")+to_string(njj);
-         int n_sig = *d_sig.Filter(cut).Count();
-         int n_bkg = *d_bkg.Filter(cut).Count();
+         double n_ewk = d_sig.Filter(cut).Sum("Event_Weight").GetValue()*scale_sig;
+         double n_qq = d_bkg.Filter(cut).Sum("Event_Weight").GetValue()*scale_bkg;
+         double n_gg = d_bkg2.Filter(cut).Sum("Event_Weight").GetValue()*scale_bkg2;
 
-         n_map_sig->SetBinContent(i,j,n_sig);
-         n_map_bkg->SetBinContent(i,j,n_bkg);
+//         n_map_sig->SetBinContent(i,j,n_sig);
+//         n_map_bkg->SetBinContent(i,j,n_bkg);
+//
+//         for (int k = 0; k < n_statslim.size(); k++)
+//         {
+//            if ( !limit_reached[k] && (n_bkg < n_statslim[k] || n_sig < n_statslim[k]) )
+//            {
+//               stats_limit[k]->SetBinContent(i,njj-.5*njj_stp);
+//               limit_reached[k] = true;
+//            }
+//         }
 
-         for (int k = 0; k < n_statslim.size(); k++)
-         {
-            if ( !limit_reached[k] && (n_bkg < n_statslim[k] || n_sig < n_statslim[k]) )
-            {
-               stats_limit[k]->SetBinContent(i,njj-.5*njj_stp);
-               limit_reached[k] = true;
-            }
-         }
-
-         double signif = calcsig(n_sig*scale_sig, n_bkg*scale_bkg, pMethod).first;
+         double signif = calcsig(n_ewk, n_qq/*-n_ewk*/ + n_gg, pMethod).first;
          //if (signif < 0) printf("neg: %.0f %.0f\n",mjj,njj);
          //if (njj > 7) printf("%4.0f %2.0f %.4f %.4f  |  %.4f\n",mjj,njj,n_sig*scale_sig,n_bkg*scale_bkg,signif);
          significance_map->SetBinContent(i, j, signif);
+         //printf("m_{jj} = %6.1f, |Dn_{jj}| = %3.1f : EWK-%.4e qq-%.4e gg-%.4e\n", mjj, njj, n_ewk, n_qq, n_gg);
       }
-      for (int k = 0; k < n_statslim.size(); k++) if (!limit_reached[k]) stats_limit[k]->SetBinContent(i,njj_max+.5*njj_stp);
+//      for (int k = 0; k < n_statslim.size(); k++) if (!limit_reached[k]) stats_limit[k]->SetBinContent(i,njj_max+.5*njj_stp);
    }
 
    significance_map->SaveAs(savefile("2Dmap_recipe","C").c_str());
-   n_map_sig->SaveAs(savefile("sig_map_recipe","C").c_str());
-   n_map_bkg->SaveAs(savefile("bkg_map_recipe","C").c_str());
+//   n_map_sig->SaveAs(savefile("sig_map_recipe","C").c_str());
+//   n_map_bkg->SaveAs(savefile("bkg_map_recipe","C").c_str());
 
    new TCanvas();
    gStyle->SetOptStat(0);
    significance_map->Draw("colz");
-   for (int k = 0; k < n_statslim.size(); k++)
-   {
-      stats_limit[k]->SetLineColor(kBlack);
-      stats_limit[k]->SetLineWidth(1);
-      stats_limit[k]->Draw("histsame");
-   }
+//   for (int k = 0; k < n_statslim.size(); k++)
+//   {
+//      stats_limit[k]->SetLineColor(kBlack);
+//      stats_limit[k]->SetLineWidth(1);
+//      stats_limit[k]->Draw("histsame");
+//   }
    gPad->SaveAs(savefile("2Dmap","pdf").c_str());
 
-   n_map_sig->Draw("colz"); gPad->SetLogz();
-   gPad->SaveAs(savefile("sig_map","pdf").c_str());
-   n_map_bkg->Draw("colz"); gPad->SetLogz();
-   gPad->SaveAs(savefile("bkg_map","pdf").c_str());
+//   n_map_sig->Draw("colz"); gPad->SetLogz();
+//   gPad->SaveAs(savefile("sig_map","pdf").c_str());
+//   n_map_bkg->Draw("colz"); gPad->SetLogz();
+//   gPad->SaveAs(savefile("bkg_map","pdf").c_str());
 }

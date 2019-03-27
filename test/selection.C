@@ -1,10 +1,9 @@
 #include "../utils/constants.h"
 using floats = ROOT::VecOps::RVec<float>;
-void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight = true, bool CMS = false)
+void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight = true)
 {
    string abnwcut = "fabs(Event_Weight) < 40";
-   string exper = CMS ? "CMS" : "ATLAS";
-   FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+exper+string(".dat")).c_str(),"w");
+   FILE *of = fopen((string("/home/user108/y4p/cutflows/selection_cutflow_")+date+string(".dat")).c_str(),"w");
    if (bDraw)
    {
       new TCanvas();
@@ -15,11 +14,11 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight
    int cutnum = 0;
    auto savefile = [&](string var){
       char rtn[800];
-      snprintf(rtn,800,"/home/user108/y4p/graph_logs/%s/selection1_%s%02d_%s_%s_weight%d.pdf",date.c_str(),CMS?"CMS_":"",cutnum++,var.c_str(),file.c_str(),(int)bWeight);
+      snprintf(rtn,800,"/home/user108/y4p/graph_logs/%s/selection1_%02d_%s_%s_weight%d.pdf",date.c_str(),cutnum++,var.c_str(),file.c_str(),(int)bWeight);
       return rtn;
    };
 
-   for (std::string iFile : {string("ZZjj_")+exper+string("_1M"),string("inclusive_ATLAS_5M")})
+   for (std::string iFile : {"ZZjj_ATLAS_1M","inclusive_ATLAS_5M","ZZgg_ATLAS_600K"})
    {
       file = iFile;
       //setup:
@@ -48,7 +47,7 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight
       double muon_leadpt(20), electron_leadpt(20);
       double muon_subpt(10), electron_subpt(12);
       double z_shell_proximity(30);
-      double jet_subpt(40);
+      double jet_subpt(30);
       double jet_etamax(4.5);
       double dijet_mass_loose(100), dijet_mass_tight(400);
       double jet_eta_diff(2.4);
@@ -57,6 +56,7 @@ void selection(string date, bool bDraw = false, bool bSave = false, bool bWeight
          .Define("Sublead_Lepton_Pt","Isolated_Lepton_Pt.size() < 2 ? -1 : Isolated_Lepton_Pt.at(1)")
          .Define("Sublead_Jet_Pt","Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].size() < 2 ? -1 : Jet_Pt[Jet_DeltaR>=Jet_DeltaR_Min&&Jet_Flav<Jet_Flav_Max].at(1)")
          .Define("Sub_Dilepton_M","(float) ((Lepton_Pairs > 1) ? Dilepton_M.at(1) : -1)")
+         .Define("Weights_Sum", string("(float) ") +to_string(weightsum) )
          .Filter(abnwcut);
 
 //---------------------------------------hacky rdatafame filter workaround (needing RNodes in future ROOT versions-----------------------------------
